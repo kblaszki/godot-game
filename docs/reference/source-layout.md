@@ -24,7 +24,7 @@ Inventory of the lab tree. Update this page when paths are added, removed, or re
 | `AGENTS.md` | Tool-neutral agent summary |
 | `engine/` | Shared headless GDScript libraries |
 | `engine/empty_boot.tscn` | Temporary main scene until a game host is wired |
-| `games/` | Per-game `sim/`, `app/`, `docs/` (none yet) |
+| `games/` | Per-game `sim/`, `app/`, `docs/` |
 | `tests/engine/` | GUT suites for `engine/` (`*_test.gd`) |
 | `tests/games/` | Per-game GUT suites |
 | `docs/` | Cross-game Diátaxis docs |
@@ -36,7 +36,7 @@ Inventory of the lab tree. Update this page when paths are added, removed, or re
 
 | Game | sim | app | docs | tests |
 |------|-----|-----|------|-------|
-| _(none yet)_ | — | — | — | — |
+| pong | `games/pong/sim/pong_config.gd`, `games/pong/sim/pong_sim.gd` | — | `games/pong/docs/` | `tests/games/pong/pong_sim_test.gd` |
 
 ## Engine modules
 
