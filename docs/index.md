@@ -50,4 +50,4 @@ Cross-game and engine docs for the **godot-game** lab (Godot 4.x, typed GDScript
 
 | Game | Docs |
 |------|------|
-| [pong](../games/pong/docs/index.md) | Headless `PongSim` rally, AI paddle, scoring |
+| [pong](../games/pong/docs/index.md) | `PongSim` rally plus menu, play, and game-over scenes |

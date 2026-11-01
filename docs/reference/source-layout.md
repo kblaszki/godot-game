@@ -20,10 +20,10 @@ Inventory of the lab tree. Update this page when paths are added, removed, or re
 
 | Path | Role |
 |------|------|
-| `project.godot` | Godot 4.x project (single lab); GUT plugin enabled |
+| `project.godot` | Godot 4.x project (single lab); GUT plugin enabled; `run/main_scene` is `res://games/pong/app/host.tscn` |
 | `AGENTS.md` | Tool-neutral agent summary |
 | `engine/` | Shared headless GDScript libraries |
-| `engine/empty_boot.tscn` | Temporary main scene until a game host is wired |
+| `engine/empty_boot.tscn` | Placeholder scene. `run/main_scene` is the pong host |
 | `games/` | Per-game `sim/`, `app/`, `docs/` |
 | `tests/engine/` | GUT suites for `engine/` (`*_test.gd`) |
 | `tests/games/` | Per-game GUT suites |
@@ -36,7 +36,7 @@ Inventory of the lab tree. Update this page when paths are added, removed, or re
 
 | Game | sim | app | docs | tests |
 |------|-----|-----|------|-------|
-| pong | `games/pong/sim/pong_config.gd`, `games/pong/sim/pong_sim.gd` | — | `games/pong/docs/` | `tests/games/pong/pong_sim_test.gd` |
+| pong | `games/pong/sim/pong_config.gd`, `games/pong/sim/pong_sim.gd` | `games/pong/app/host.gd`, `games/pong/app/host.tscn`, `games/pong/app/main_menu.gd`, `games/pong/app/main_menu.tscn`, `games/pong/app/play.gd`, `games/pong/app/play.tscn` (`host.tscn` is `run/main_scene`) | `games/pong/docs/` | `tests/games/pong/pong_sim_test.gd` |
 
 ## Engine modules
 
@@ -46,7 +46,7 @@ Inventory of the lab tree. Update this page when paths are added, removed, or re
 | `engine/seeded_rng.gd` | `SeededRng` seeded RNG wrapper |
 | `engine/scene_request.gd` | `SceneRequest` PUSH/POP/REPLACE/QUIT |
 | `engine/scene_stack.gd` | `SceneStack` request queue + apply |
-| `engine/empty_boot.tscn` | Temporary main scene |
+| `engine/empty_boot.tscn` | Placeholder scene. `run/main_scene` is the pong host |
 
 ## Engine tests
 

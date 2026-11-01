@@ -1,0 +1,76 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://games/pong/app/play.gd" id="1_play"]
+
+[node name="Play" type="Node2D"]
+script = ExtResource("1_play")
+
+[node name="Background" type="ColorRect" parent="."]
+offset_right = 800.0
+offset_bottom = 450.0
+mouse_filter = 2
+color = Color(0.06, 0.07, 0.1, 1)
+
+[node name="Net" type="ColorRect" parent="."]
+offset_left = 399.0
+offset_right = 401.0
+offset_bottom = 450.0
+mouse_filter = 2
+color = Color(1, 1, 1, 0.25)
+
+[node name="LeftPaddle" type="ColorRect" parent="."]
+offset_right = 12.0
+offset_top = 185.0
+offset_bottom = 265.0
+mouse_filter = 2
+color = Color(1, 1, 1, 1)
+
+[node name="RightPaddle" type="ColorRect" parent="."]
+offset_left = 788.0
+offset_right = 800.0
+offset_top = 185.0
+offset_bottom = 265.0
+mouse_filter = 2
+color = Color(1, 1, 1, 1)
+
+[node name="Ball" type="ColorRect" parent="."]
+offset_left = 392.0
+offset_top = 217.0
+offset_right = 408.0
+offset_bottom = 233.0
+mouse_filter = 2
+color = Color(1, 1, 1, 1)
+
+[node name="Hud" type="CanvasLayer" parent="."]
+
+[node name="Score" type="Label" parent="Hud"]
+offset_top = 12.0
+offset_right = 800.0
+offset_bottom = 52.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 28
+text = "0    0"
+horizontal_alignment = 1
+
+[node name="BannerPanel" type="ColorRect" parent="Hud"]
+visible = false
+offset_left = 170.0
+offset_top = 150.0
+offset_right = 630.0
+offset_bottom = 300.0
+mouse_filter = 2
+color = Color(0, 0, 0, 0.7)
+
+[node name="Banner" type="Label" parent="Hud"]
+visible = false
+offset_left = 170.0
+offset_top = 150.0
+offset_right = 630.0
+offset_bottom = 300.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 28
+text = ""
+horizontal_alignment = 1
+vertical_alignment = 1
