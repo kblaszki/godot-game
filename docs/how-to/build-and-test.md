@@ -26,15 +26,21 @@ godot --path . --headless --quit-after 1
 
 ## Run GUT (headless)
 
+Test scripts are named `*_test.gd`. Pass an empty prefix and that suffix so GUT finds them (default prefix is `test_`).
+
 ```sh
-godot --path . --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests -gexit
+godot --path . --headless -s addons/gut/gut_cmdln.gd \
+  -gdir=res://tests -ginclude_subdirs \
+  -gprefix="" -gsuffix="_test.gd" -gexit
 ```
 
 Narrow scope:
 
 ```sh
-godot --path . --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests/engine -gexit
-godot --path . --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests/games/<name> -gexit
+godot --path . --headless -s addons/gut/gut_cmdln.gd \
+  -gdir=res://tests/engine -gprefix="" -gsuffix="_test.gd" -gexit
+godot --path . --headless -s addons/gut/gut_cmdln.gd \
+  -gdir=res://tests/games/<name> -gprefix="" -gsuffix="_test.gd" -gexit
 ```
 
 Always use `--headless`. Suites must not require an open editor window.

@@ -43,6 +43,8 @@ Cross-game and engine docs for the **godot-game** lab (Godot 4.x, typed GDScript
 | Doc | Purpose |
 |-----|---------|
 | [source-layout.md](reference/source-layout.md) | Inventory of paths and suites |
+| [engine-scene-stack.md](reference/engine-scene-stack.md) | `SceneRequest` and `SceneStack` |
+| [engine-core.md](reference/engine-core.md) | Fixed tick length and seeded RNG |
 
 ## Game documentation
 

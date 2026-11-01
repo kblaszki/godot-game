@@ -16,11 +16,13 @@ alwaysApply: false
 ## Tests (GUT, headless)
 
 ```sh
-godot --path . --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests -gexit
+godot --path . --headless -s addons/gut/gut_cmdln.gd \
+  -gdir=res://tests -ginclude_subdirs \
+  -gprefix="" -gsuffix="_test.gd" -gexit
 ```
 
 - Suites live in `tests/engine/` and `tests/games/<name>/`
-- Name test scripts `*_test.gd`; name behavioral test methods / fixtures like `*Should` / `test_*_should_*`
+- Name test scripts `*_test.gd` (use `-gprefix="" -gsuffix="_test.gd"`); methods `test_*_should_*`
 - Tests open no window (`--headless`)
 - GUT lives under `addons/gut/` when installed — see `docs/how-to/build-and-test.md`
 

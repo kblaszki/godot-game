@@ -6,9 +6,10 @@ related_code: [engine/, games/, tests/, project.godot]
 related_docs:
   - ../index.md
   - ../reference/source-layout.md
+  - ../reference/engine-scene-stack.md
   - ../how-to/write-headless-tests.md
   - ../how-to/add-a-game.md
-keywords: [architecture, headless, sim, app, scene-flow]
+keywords: [architecture, headless, sim, app, scene-flow, SceneRequest, SceneStack]
 last_reviewed: 2026-11-01
 ---
 
@@ -49,6 +50,33 @@ Sim code must not use `Node`, `get_tree()`, `Engine`, wall-clock `Time`, unseede
 
 ## Scene flow
 
-Presentation changes the active UI through **explicit requests** (push / pop / replace / pause / quit style), documented per game under `games/<name>/docs/`. Do not invent a generic `SceneManager` type name unless this doc is updated to introduce one.
+Presentation changes the active UI by enqueueing a [`SceneRequest`](../reference/engine-scene-stack.md) on a [`SceneStack`](../reference/engine-scene-stack.md), then calling `apply`. Both types live in `engine/` as `RefCounted` libraries. They store scene paths and request kinds. A host under `games/<name>/app/`, or a future lab launcher, reads `peek` and the list returned by `apply`, then performs the Godot scene change. Per-game flow stays documented under `games/<name>/docs/`.
+
+`SceneRequest.Kind` is `PUSH`, `POP`, `REPLACE`, or `QUIT`. `scene_path` is set for `PUSH` and `REPLACE`. `QUIT` stays in the `apply` result so the host can quit; the path stack is left as it was.
+
+```mermaid
+classDiagram
+  class SceneRequest {
+    +Kind kind
+    +String scene_path
+  }
+  class SceneStack {
+    +request()
+    +apply()
+    +peek()
+    +depth()
+  }
+  SceneStack --> SceneRequest : queues
+```
+
+```mermaid
+sequenceDiagram
+  participant Host as appHost
+  participant Stack as SceneStack
+  Host->>Stack: request
+  Host->>Stack: apply
+  Stack-->>Host: applied requests
+  Host->>Host: change scene or quit
+```
 
 A thin lab launcher scene may eventually pick among games; until then `run/main_scene` in `project.godot` may be empty.

@@ -26,18 +26,22 @@ Fails if `project.godot` is broken or required resources fail to load.
 ## Unit tests (GUT, headless)
 
 ```sh
-godot --path . --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests -gexit
+godot --path . --headless -s addons/gut/gut_cmdln.gd \
+  -gdir=res://tests -ginclude_subdirs \
+  -gprefix="" -gsuffix="_test.gd" -gexit
 ```
 
-- Suites: `tests/engine/`, `tests/games/<name>/`
+- Suites: `tests/engine/`, `tests/games/<name>/` named `*_test.gd`
 - Always `--headless` — tests open no window
 - Exit non-zero on failure (`-gexit`)
 
 Narrow a directory when useful:
 
 ```sh
-godot --path . --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests/engine -gexit
-godot --path . --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests/games/<name> -gexit
+godot --path . --headless -s addons/gut/gut_cmdln.gd \
+  -gdir=res://tests/engine -gprefix="" -gsuffix="_test.gd" -gexit
+godot --path . --headless -s addons/gut/gut_cmdln.gd \
+  -gdir=res://tests/games/<name> -gprefix="" -gsuffix="_test.gd" -gexit
 ```
 
 ## Typical verify loop after code changes
