@@ -18,14 +18,15 @@ Inventory of the lab tree. Update this page when paths are added, removed, or re
 
 | Path | Role |
 |------|------|
-| `project.godot` | Godot 4.x project (single lab) |
+| `project.godot` | Godot 4.x project (single lab); GUT plugin enabled |
 | `AGENTS.md` | Tool-neutral agent summary |
 | `engine/` | Shared headless GDScript libraries |
+| `engine/empty_boot.tscn` | Temporary main scene until a game host is wired |
 | `games/` | Per-game `sim/`, `app/`, `docs/` (none yet) |
 | `tests/engine/` | GUT suites for `engine/` |
 | `tests/games/` | Per-game GUT suites |
 | `docs/` | Cross-game Diátaxis docs |
-| `addons/gut/` | GUT addon when installed |
+| `addons/gut/` | GUT **9.3.1** (vendored, plugin enabled) |
 | `.cursor/rules/` | Cursor rules |
 | `.cursor/skills/` | Cursor skills |
 
@@ -39,4 +40,4 @@ Inventory of the lab tree. Update this page when paths are added, removed, or re
 
 | Path | Notes |
 |------|-------|
-| `engine/` | Placeholder directory; add `class_name` libraries as needed |
+| `engine/` | Shared libraries + temporary `empty_boot.tscn` |

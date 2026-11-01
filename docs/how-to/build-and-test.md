@@ -16,7 +16,7 @@ last_reviewed: 2026-11-01
 ## Prerequisites
 
 - Godot **4.x** on `PATH` as `godot` (or use the full binary path)
-- For unit tests: install **GUT** into `addons/gut/` (Asset Library or vendor the addon). It is not shipped with the empty lab stub.
+- **GUT 9.3.1** is vendored at `addons/gut/` and enabled via `editor_plugins` in `project.godot`
 
 ## Smoke-load the project
 
