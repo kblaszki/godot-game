@@ -1,0 +1,15 @@
+; Godot 4.x lab project (minimal stub). Open in the Godot editor to finish config.
+; Games live under res://games/<name>/; shared libraries under res://engine/.
+
+config_version=5
+
+[application]
+
+config/name="godot-game"
+config/description="Godot 4 GDScript multi-game lab (headless sim + app scenes)."
+config/features=PackedStringArray("4.3", "Forward Plus")
+run/main_scene=""
+
+[rendering]
+
+renderer/rendering_method="forward_plus"

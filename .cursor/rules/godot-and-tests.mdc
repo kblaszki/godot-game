@@ -1,0 +1,27 @@
+---
+description: Godot project wiring and GUT unit-test conventions
+globs: "project.godot,**/tests/**,**/*.gd"
+alwaysApply: false
+---
+
+# Godot and tests
+
+## Project wiring
+
+- One root `project.godot` for the whole lab
+- Shared libraries under `engine/`; each game under `games/<name>/{sim,app,docs}/`
+- New `.gd` files belong next to their owner. Scene scripts sit beside their `.tscn` under `app/`
+- Do not put game rules in autoloads unless the architecture doc explicitly allows a thin lab service
+
+## Tests (GUT, headless)
+
+```sh
+godot --path . --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests -gexit
+```
+
+- Suites live in `tests/engine/` and `tests/games/<name>/`
+- Name test scripts `*_test.gd`; name behavioral test methods / fixtures like `*Should` / `test_*_should_*`
+- Tests open no window (`--headless`)
+- GUT lives under `addons/gut/` when installed — see `docs/how-to/build-and-test.md`
+
+When changing a module, update or add unit tests under the matching `tests/engine/` or `tests/games/<name>/` leaf. Recipes: `docs/how-to/write-headless-tests.md`.

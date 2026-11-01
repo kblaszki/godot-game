@@ -1,0 +1,18 @@
+# Godot 4+
+.godot/
+*.translation
+
+# Imports / OS
+.import/
+.DS_Store
+Thumbs.db
+
+# Exports
+export.cfg
+export_presets.cfg
+*.pck
+*.zip
+
+# Mono / C# (unused, keep ignore harmless)
+.mono/
+data_*/

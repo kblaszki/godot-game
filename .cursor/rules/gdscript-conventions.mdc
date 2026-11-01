@@ -1,0 +1,33 @@
+---
+description: GDScript and scene conventions for godot-game sources
+globs: "**/*.{gd,tscn,uid}"
+alwaysApply: false
+---
+
+# GDScript conventions
+
+- Target: **Godot 4.x**, typed GDScript
+- Types: `class_name` in **PascalCase**; methods/vars/signals: **snake_case**
+- Prefer static typing on parameters, returns, and member vars
+- One primary type per `.gd` file under the owning folder (`engine/`, `games/<game>/sim/`, or `games/<game>/app/`)
+- Sim and shared engine libraries: extend `RefCounted` (or plain data Resources). Do not extend `Node` there.
+- App / scenes: Node scripts may use `@onready`, signals, and the scene tree
+- Ownership: prefer clear ownership; avoid dangling Node references across scenes; free or queue what you add
+
+## Scenes
+
+- Game presentation scenes live under `games/<game>/app/` as `.tscn` + matching `.gd`
+- Keep scene trees shallow; logic that is a rule belongs in `sim/`, not in `_process`
+- Do not invent parallel "manager" singletons for one-off orchestration
+
+## Style
+
+- 4-space indent (Godot default)
+- Explicit `return` types on public methods when practical
+- Signals declare their payload types when possible
+- Prefer `preload` for stable dependencies; `load` when deferred is required
+
+## Headless boundary
+
+- `games/<game>/sim/**` and headless `engine/**` must not reference `Node`, `get_tree()`, `Engine`, wall-clock `Time`, unseeded RNG, or `FileAccess`
+- Only `games/<game>/app/**` (and lab launcher scenes) drive the Godot runtime UI

@@ -1,0 +1,55 @@
+---
+description: Project overview, architecture, and verify commands for godot-game
+alwaysApply: true
+---
+
+# godot-game
+
+Godot 4.x GDScript game lab. Shared code lives in `engine/` (`class_name` / `RefCounted` libraries). Games live under `games/<name>/` with a headless `sim/` and a presentation `app/`. Contract: `docs/explanation/architecture.md`. No games are scaffolded yet — add one with the `add-game` skill.
+
+## Stack
+
+- Godot **4.x**, typed **GDScript**
+- One root `project.godot`
+- Unit tests via **GUT** (headless CLI); addon under `addons/gut/` when installed
+- Docs follow Diátaxis under `docs/` and `games/<game>/docs/`
+
+## Layout
+
+- `engine/` — shared headless types (`RefCounted`, no `Node`)
+- `games/<name>/sim/` — headless game rules (`RefCounted`)
+- `games/<name>/app/` — scenes (`.tscn`) and Node scripts for presentation
+- `games/<name>/docs/` — per-game Diátaxis docs (map `games/<name>/docs/index.md`)
+- `tests/engine/` — GUT suites for engine types
+- `tests/games/<name>/` — GUT suites for that game's sim/app
+- `docs/` — engine and cross-game Diátaxis docs (map `docs/index.md`)
+- `addons/gut/` — GUT addon (install separately; see `docs/how-to/build-and-test.md`)
+- `assets/` — shared fonts, textures, audio (when present)
+
+## Where to read first
+
+- Engine work: `docs/explanation/architecture.md`, `docs/reference/source-layout.md`
+- Existing game: `games/<game>/docs/index.md`
+- New game: `docs/tutorials/create_new_game.md`, `docs/how-to/add-a-game.md`, and the `add-game` skill
+- Tests: `docs/how-to/write-headless-tests.md`
+
+## Verify
+
+```sh
+# Project must load (editor or headless). Prefer the godot binary on PATH.
+godot --path . --headless --quit-after 1
+
+# Unit tests (requires GUT installed under addons/gut/)
+godot --path . --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests -gexit
+```
+
+Details: `docs/how-to/build-and-test.md` and the `run-build-and-tests` skill.
+
+## Agent pitfalls
+
+- Mechanics belong in `games/<game>/sim/` as `RefCounted` — never in a scene script first
+- Sim code must not use `Node`, `get_tree()`, `Engine`, wall-clock `Time`, unseeded RNG, or `FileAccess`
+- Presentation in `games/<game>/app/` consumes sim state/events; it does not redefine rules for visuals
+- Prefer real type names from this repo; do not invent generic managers (`SceneManager`, `InputManager`, …)
+- Every new engine feature or game mechanic gets a Diátaxis entry; architecture/state-flow changes add a Mermaid diagram (`documentation.mdc`)
+- Headless First: sim + GUT before `.tscn` polish (`headless-first.mdc`)

@@ -1,0 +1,17 @@
+---
+description: Headless First - rules and mechanics live in Node-free, tested code before any presentation
+alwaysApply: true
+---
+
+# Headless First
+
+Build and test the logic without a window, then present it.
+
+1. **Rules live in the sim.** Game mechanics (movement, collision, scoring, turns, economy, cards) go in `games/<game>/sim/` as typed GDScript `RefCounted` (or plain Resources used as data). Engine features go in `engine/` the same way. Never put a rule in a scene script, `_process`, or the main scene first.
+2. **Test before presenting.** A new mechanic lands with a GUT suite under `tests/games/<game>/` or `tests/engine/`. Include a same-seed determinism check when randomness is involved.
+3. **Presentation consumes sim output.** App code under `games/<game>/app/` reads sim state and sim events and turns them into nodes, draws, sounds, and animations. It does not change rules to make visuals work.
+4. **No platform in the sim.** No `Node`, no `get_tree()`, no `Engine`, no wall-clock (`Time.get_ticks_msec`, `Time.get_unix_time_from_system`), no unseeded `rand*` / `RandomNumberGenerator` without an injected seed, and no `FileAccess` / filesystem. Randomness is a seeded RNG owned by the sim; time advances only by a fixed tick constant.
+5. **Godot runtime is the presentation shell.** Scenes, autoloads that touch the tree, and input that drives Nodes belong in `app/` (or a thin lab launcher), not in `sim/` or headless `engine/` libraries.
+6. **Tests open no window.** Run GUT with `--headless`. Suites construct sim types directly; they do not rely on an open editor viewport.
+
+Details: `docs/explanation/architecture.md`, `docs/how-to/write-headless-tests.md`.
