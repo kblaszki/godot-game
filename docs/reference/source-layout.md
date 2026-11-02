@@ -64,6 +64,8 @@ Inventory of the lab tree. Update this page when paths are added, removed, or re
 | `engine/input_state.gd` | `InputState` held/edge actions |
 | `engine/high_score_table.gd` | Fixed-capacity descending scores |
 | `engine/score_store.gd` | Load/save high-score text files |
+| `engine/lab_settings.gd` | Display mode + resolution profile |
+| `engine/settings_store.gd` | Load/save `LabSettings` text files |
 | `engine/null_audio.gd` | Headless no-op audio port |
 | `engine/scene_request.gd` | `SceneRequest` PUSH/POP/REPLACE/QUIT |
 | `engine/scene_stack.gd` | `SceneStack` request queue + apply + `paths()` |
@@ -77,6 +79,8 @@ Inventory of the lab tree. Update this page when paths are added, removed, or re
 | `tests/engine/input_state_test.gd` | `InputState` held/edges/axis |
 | `tests/engine/high_score_table_test.gd` | insert / qualifies / ties |
 | `tests/engine/score_store_test.gd` | load/save / corrupt / missing |
+| `tests/engine/lab_settings_test.gd` | defaults / normalize / duplicate |
+| `tests/engine/settings_store_test.gd` | load/save / corrupt / unknown resolution |
 | `tests/engine/null_audio_test.gd` | `NullAudio` + `AudioSpy` |
 | `tests/engine/scene_stack_test.gd` | `SceneStack` apply + `paths()` |
 | `tests/mocks/audio_spy.gd` | Records `play` calls for GUT |
