@@ -9,10 +9,13 @@ related_code:
   - lab/lab_host.tscn
   - lab/launcher.gd
   - lab/launcher.tscn
+  - lab/settings.gd
+  - lab/settings.tscn
   - lab/window_applier.gd
   - lab/godot_audio.gd
   - project.godot
   - tests/lab/lab_host_flow_test.gd
+  - tests/lab/lab_settings_flow_test.gd
   - tests/lab/window_applier_test.gd
 related_docs:
   - ../index.md
@@ -22,7 +25,7 @@ related_docs:
   - engine-scene-stack.md
   - engine-save.md
   - engine-audio.md
-keywords: [lab, launcher, LayeredHost, nested-host, WindowApplier, GodotAudio, stretch]
+keywords: [lab, launcher, settings, LayeredHost, nested-host, WindowApplier, GodotAudio, stretch]
 last_reviewed: 2026-11-02
 ---
 
@@ -60,7 +63,19 @@ Shared base at `lab/layered_host.gd`: `SceneStack`, `submit`, `_flush`, `sync_la
 
 ## Launcher
 
-`lab/launcher.gd` holds `GAMES` as `{title, host_path}` rows. Each row becomes a button that `REPLACE`s that game host. **Quit** submits `QUIT`.
+`lab/launcher.gd` holds `GAMES` as `{title, host_path}` rows. Each row becomes a button that `REPLACE`s that game host. **Settings** `REPLACE`s `lab/settings.tscn`. **Quit** submits `QUIT`.
+
+## Settings
+
+`lab/settings.tscn` is lab-only (not in game pause menus). Controls:
+
+| Control | Behavior |
+|---------|----------|
+| Resolution `<` / `>` | Cycle `LabSettings.RESOLUTIONS`; save + apply immediately |
+| Mode | Toggle windowed / fullscreen; save + apply immediately |
+| Back | `REPLACE` launcher |
+
+Uses `SettingsStore.DEFAULT_PATH` (`user://settings.txt`) and `WindowApplier`.
 
 ## Nested quit
 

@@ -46,6 +46,7 @@ Inventory of the lab tree. Update this page when paths are added, removed, or re
 | `lab/layered_host.gd` | Shared layered `SceneStack` host |
 | `lab/lab_host.gd` | Main scene host; loads settings + `return_to_launcher` |
 | `lab/launcher.gd` | Game registry UI |
+| `lab/settings.gd` / `settings.tscn` | Lab display settings UI |
 | `lab/window_applier.gd` | Applies `LabSettings` to a `Window` |
 | `lab/godot_audio.gd` | Node audio adapter (`GodotAudio`) |
 
@@ -86,6 +87,7 @@ Inventory of the lab tree. Update this page when paths are added, removed, or re
 | `tests/engine/scene_stack_test.gd` | `SceneStack` apply + `paths()` |
 | `tests/mocks/audio_spy.gd` | Records `play` calls for GUT |
 | `tests/lab/lab_host_flow_test.gd` | launcher ↔ pong host nesting |
+| `tests/lab/lab_settings_flow_test.gd` | launcher ↔ settings; persist resolution |
 | `tests/lab/window_applier_test.gd` | windowed / fullscreen apply |
 | `tests/games/pong/pong_sim_test.gd` | sim determinism / AI / scoring |
 | `tests/games/pong/pong_host_flow_test.gd` | pause keep-alive |
