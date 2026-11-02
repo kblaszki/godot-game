@@ -1,6 +1,7 @@
 extends Node2D
 
 const MENU_PATH := "res://games/pong/app/main_menu.tscn"
+const PAUSE_PATH := "res://games/pong/app/pause_menu.tscn"
 const SERVE_SEED := 1
 
 var _config: PongConfig
@@ -37,18 +38,23 @@ func _physics_process(delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if _leaving or _sim == null or _sim.get_status() != "game_over":
+	if _leaving or _sim == null:
 		return
-	if not (event.is_action_pressed("ui_accept") or event.is_action_pressed("ui_cancel")):
+	var status := _sim.get_status()
+	if status == "game_over":
+		if event.is_action_pressed("ui_accept") or event.is_action_pressed("ui_cancel"):
+			_leaving = true
+			_submit(SceneRequest.replace(MENU_PATH))
+			get_viewport().set_input_as_handled()
 		return
-	_leaving = true
-	_submit(SceneRequest.replace(MENU_PATH))
-	get_viewport().set_input_as_handled()
+	if event.is_action_pressed("pong_pause"):
+		_submit(SceneRequest.push(PAUSE_PATH))
+		get_viewport().set_input_as_handled()
 
 
 func _read_left_dir() -> int:
-	var up := Input.is_action_pressed("ui_up") or Input.is_physical_key_pressed(KEY_W)
-	var down := Input.is_action_pressed("ui_down") or Input.is_physical_key_pressed(KEY_S)
+	var up := Input.is_action_pressed("pong_move_up")
+	var down := Input.is_action_pressed("pong_move_down")
 	if up == down:
 		return 0
 	if up:

@@ -9,7 +9,7 @@ related_docs:
   - engine-core.md
   - engine-scene-stack.md
 keywords: [layout, inventory, paths, tests]
-last_reviewed: 2026-11-01
+last_reviewed: 2026-11-02
 ---
 
 # Source layout
@@ -20,7 +20,7 @@ Inventory of the lab tree. Update this page when paths are added, removed, or re
 
 | Path | Role |
 |------|------|
-| `project.godot` | Godot 4.x project (single lab); GUT plugin enabled; `run/main_scene` is `res://games/pong/app/host.tscn` |
+| `project.godot` | Godot 4.x lab; GUT enabled; InputMap `pong_*`; `run/main_scene` is pong host |
 | `AGENTS.md` | Tool-neutral agent summary |
 | `engine/` | Shared headless GDScript libraries |
 | `engine/empty_boot.tscn` | Placeholder scene. `run/main_scene` is the pong host |
@@ -36,7 +36,7 @@ Inventory of the lab tree. Update this page when paths are added, removed, or re
 
 | Game | sim | app | docs | tests |
 |------|-----|-----|------|-------|
-| pong | `games/pong/sim/pong_config.gd`, `games/pong/sim/pong_sim.gd` | `games/pong/app/host.gd`, `games/pong/app/host.tscn`, `games/pong/app/main_menu.gd`, `games/pong/app/main_menu.tscn`, `games/pong/app/play.gd`, `games/pong/app/play.tscn` (`host.tscn` is `run/main_scene`) | `games/pong/docs/` | `tests/games/pong/pong_sim_test.gd` |
+| pong | `games/pong/sim/pong_config.gd`, `games/pong/sim/pong_sim.gd` | layered host + `main_menu`, `play`, `pause_menu` (`host.tscn` is `run/main_scene`) | `games/pong/docs/` | `pong_sim_test.gd`, `pong_host_flow_test.gd` |
 
 ## Engine modules
 
@@ -45,7 +45,7 @@ Inventory of the lab tree. Update this page when paths are added, removed, or re
 | `engine/fixed_tick.gd` | `FixedTick.SEC` fixed step |
 | `engine/seeded_rng.gd` | `SeededRng` seeded RNG wrapper |
 | `engine/scene_request.gd` | `SceneRequest` PUSH/POP/REPLACE/QUIT |
-| `engine/scene_stack.gd` | `SceneStack` request queue + apply |
+| `engine/scene_stack.gd` | `SceneStack` request queue + apply + `paths()` |
 | `engine/empty_boot.tscn` | Placeholder scene. `run/main_scene` is the pong host |
 
 ## Engine tests
@@ -54,4 +54,11 @@ Inventory of the lab tree. Update this page when paths are added, removed, or re
 |-------|--------|
 | `tests/engine/fixed_tick_test.gd` | `FixedTick.SEC` |
 | `tests/engine/seeded_rng_test.gd` | same-seed / different-seed |
-| `tests/engine/scene_stack_test.gd` | `SceneStack` apply batch |
+| `tests/engine/scene_stack_test.gd` | `SceneStack` apply batch + `paths()` |
+
+## Game tests
+
+| Suite | Covers |
+|-------|--------|
+| `tests/games/pong/pong_sim_test.gd` | sim determinism / AI / scoring |
+| `tests/games/pong/pong_host_flow_test.gd` | layered host pause keep-alive |

@@ -4,7 +4,6 @@ const MENU_PATH := "res://games/pong/app/main_menu.tscn"
 
 var _stack: SceneStack = SceneStack.new()
 var _pending: Array[SceneRequest] = []
-var _current_path: String = ""
 
 @onready var _content: Control = $Content
 
@@ -24,6 +23,15 @@ func submit(req: SceneRequest) -> void:
 	_pending.append(req)
 
 
+## Sync Content children to match stack paths (bottom → top). Public for GUT.
+func sync_layers(desired: Array[String]) -> void:
+	_trim_mismatched_prefix(desired)
+	while _content.get_child_count() < desired.size():
+		var index := _content.get_child_count()
+		_instance_layer(desired[index])
+	_apply_process_modes()
+
+
 func _flush() -> void:
 	if _pending.is_empty():
 		return
@@ -37,21 +45,40 @@ func _flush() -> void:
 		if req != null and req.kind == SceneRequest.Kind.QUIT:
 			get_tree().quit()
 			return
-	var path := _stack.peek()
-	if path == _current_path:
-		return
-	_swap(path)
+	sync_layers(_stack.paths())
 
 
-func _swap(path: String) -> void:
-	for child: Node in _content.get_children():
-		_content.remove_child(child)
-		child.free()
-	_current_path = path
+func _trim_mismatched_prefix(desired: Array[String]) -> void:
+	var keep := 0
+	var child_count := _content.get_child_count()
+	while keep < child_count and keep < desired.size():
+		var child: Node = _content.get_child(keep)
+		if str(child.get_meta("scene_path", "")) != desired[keep]:
+			break
+		keep += 1
+	while _content.get_child_count() > keep:
+		var top: Node = _content.get_child(_content.get_child_count() - 1)
+		_content.remove_child(top)
+		top.free()
+
+
+func _instance_layer(path: String) -> void:
 	if path.is_empty():
 		return
 	var packed := load(path) as PackedScene
 	if packed == null:
 		push_error("Failed to load scene: %s" % path)
 		return
-	_content.add_child(packed.instantiate())
+	var node: Node = packed.instantiate()
+	node.set_meta("scene_path", path)
+	_content.add_child(node)
+
+
+func _apply_process_modes() -> void:
+	var count := _content.get_child_count()
+	for i in count:
+		var child: Node = _content.get_child(i)
+		if i < count - 1:
+			child.process_mode = Node.PROCESS_MODE_DISABLED
+		else:
+			child.process_mode = Node.PROCESS_MODE_INHERIT

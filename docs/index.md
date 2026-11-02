@@ -50,4 +50,4 @@ Cross-game and engine docs for the **godot-game** lab (Godot 4.x, typed GDScript
 
 | Game | Docs |
 |------|------|
-| [pong](../games/pong/docs/index.md) | `PongSim` rally plus menu, play, and game-over scenes |
+| [pong](../games/pong/docs/index.md) | `PongSim` rally plus menu, play, pause overlay, and game-over |
