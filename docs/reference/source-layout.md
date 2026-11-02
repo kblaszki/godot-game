@@ -27,7 +27,7 @@ Inventory of the lab tree. Update this page when paths are added, removed, or re
 | `project.godot` | Godot 4.x lab; GUT enabled; InputMap `pong_*` / `snake_*`; `run/main_scene` is `lab/lab_host.tscn` |
 | `AGENTS.md` | Tool-neutral agent summary |
 | `engine/` | Shared headless GDScript libraries |
-| `lab/` | LayeredHost, lab host, launcher |
+| `lab/` | LayeredHost, lab host, launcher, WindowApplier |
 | `games/` | Per-game `sim/`, `app/`, `docs/` |
 | `tests/engine/` | GUT suites for `engine/` |
 | `tests/lab/` | GUT suites for lab shell |
@@ -44,8 +44,9 @@ Inventory of the lab tree. Update this page when paths are added, removed, or re
 | Path | Notes |
 |------|-------|
 | `lab/layered_host.gd` | Shared layered `SceneStack` host |
-| `lab/lab_host.gd` | Main scene host; `return_to_launcher` |
+| `lab/lab_host.gd` | Main scene host; loads settings + `return_to_launcher` |
 | `lab/launcher.gd` | Game registry UI |
+| `lab/window_applier.gd` | Applies `LabSettings` to a `Window` |
 | `lab/godot_audio.gd` | Node audio adapter (`GodotAudio`) |
 
 ## Games
@@ -85,6 +86,7 @@ Inventory of the lab tree. Update this page when paths are added, removed, or re
 | `tests/engine/scene_stack_test.gd` | `SceneStack` apply + `paths()` |
 | `tests/mocks/audio_spy.gd` | Records `play` calls for GUT |
 | `tests/lab/lab_host_flow_test.gd` | launcher ↔ pong host nesting |
+| `tests/lab/window_applier_test.gd` | windowed / fullscreen apply |
 | `tests/games/pong/pong_sim_test.gd` | sim determinism / AI / scoring |
 | `tests/games/pong/pong_host_flow_test.gd` | pause keep-alive |
 | `tests/games/snake/snake_sim_test.gd` | snake rules / determinism |

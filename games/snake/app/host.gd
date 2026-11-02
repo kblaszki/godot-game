@@ -10,12 +10,6 @@ func _boot() -> void:
 	add_child(_audio)
 	_audio.register_blip(&"eat", 880.0, 0.06)
 	_audio.register_blip(&"die", 220.0, 0.18)
-	var config := SnakeConfig.new()
-	var size := Vector2i(
-		int(config.width * config.cell),
-		int(config.height * config.cell) + 48
-	)
-	get_window().size = size
 	submit(SceneRequest.replace(MENU_PATH))
 
 

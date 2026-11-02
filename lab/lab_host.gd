@@ -1,11 +1,11 @@
 extends "res://lab/layered_host.gd"
 
 const LAUNCHER_PATH := "res://lab/launcher.tscn"
-const DEFAULT_SIZE := Vector2i(960, 540)
 
 
 func _boot() -> void:
-	get_window().size = DEFAULT_SIZE
+	var settings := SettingsStore.load(SettingsStore.DEFAULT_PATH)
+	WindowApplier.apply(settings, get_window())
 	submit(SceneRequest.replace(LAUNCHER_PATH))
 
 

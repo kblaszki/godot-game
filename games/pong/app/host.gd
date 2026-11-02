@@ -4,8 +4,6 @@ const MENU_PATH := "res://games/pong/app/main_menu.tscn"
 
 
 func _boot() -> void:
-	var config := PongConfig.new()
-	get_window().size = Vector2i(int(config.court_width), int(config.court_height))
 	submit(SceneRequest.replace(MENU_PATH))
 
 

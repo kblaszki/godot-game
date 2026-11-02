@@ -41,7 +41,7 @@ flowchart TD
 2. Cover it with GUT under `tests/`.
 3. Only then wire Nodes / `.tscn` in `app/`.
 
-Sim code must not use `Node`, `get_tree()`, `Engine`, wall-clock `Time`, unseeded RNG, or `FileAccess`. Persistence I/O is confined to `ScoreStore` in `engine/` (see [engine-save](../reference/engine-save.md)); apps call it after reading sim scores.
+Sim code must not use `Node`, `get_tree()`, `Engine`, wall-clock `Time`, unseeded RNG, or `FileAccess`. Persistence I/O is confined to `ScoreStore` / `SettingsStore` in `engine/` (see [engine-save](../reference/engine-save.md)); apps and the lab shell call them. Display size and fullscreen are lab-owned (`WindowApplier` + project stretch); game hosts must not resize the window.
 
 ## Scene flow
 
