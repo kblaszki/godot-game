@@ -3,6 +3,7 @@ extends Control
 ## Registry of playable games for the lab shell. Add a row per new game host.
 const GAMES := [
 	{"title": "Pong", "host_path": "res://games/pong/app/host.tscn"},
+	{"title": "Snake", "host_path": "res://games/snake/app/host.tscn"},
 ]
 
 @onready var _column: VBoxContainer = $Center/Column

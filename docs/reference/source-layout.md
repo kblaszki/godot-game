@@ -21,7 +21,7 @@ Inventory of the lab tree. Update this page when paths are added, removed, or re
 
 | Path | Role |
 |------|------|
-| `project.godot` | Godot 4.x lab; GUT enabled; InputMap `pong_*`; `run/main_scene` is `lab/lab_host.tscn` |
+| `project.godot` | Godot 4.x lab; GUT enabled; InputMap `pong_*` / `snake_*`; `run/main_scene` is `lab/lab_host.tscn` |
 | `AGENTS.md` | Tool-neutral agent summary |
 | `engine/` | Shared headless GDScript libraries |
 | `lab/` | LayeredHost, lab host, launcher |
@@ -47,6 +47,7 @@ Inventory of the lab tree. Update this page when paths are added, removed, or re
 | Game | sim | app | docs | tests |
 |------|-----|-----|------|-------|
 | pong | `pong_config.gd`, `pong_sim.gd` | host extends LayeredHost + menu/play/pause | `games/pong/docs/` | `pong_sim_test.gd`, `pong_host_flow_test.gd` |
+| snake | `snake_config.gd`, `snake_sim.gd` | host extends LayeredHost + menu/play/pause | `games/snake/docs/` | `snake_sim_test.gd`, `snake_host_flow_test.gd` |
 
 ## Engine modules
 
@@ -67,3 +68,5 @@ Inventory of the lab tree. Update this page when paths are added, removed, or re
 | `tests/lab/lab_host_flow_test.gd` | launcher ↔ pong host nesting |
 | `tests/games/pong/pong_sim_test.gd` | sim determinism / AI / scoring |
 | `tests/games/pong/pong_host_flow_test.gd` | pause keep-alive |
+| `tests/games/snake/snake_sim_test.gd` | snake rules / determinism |
+| `tests/games/snake/snake_host_flow_test.gd` | snake pause keep-alive |
