@@ -29,7 +29,7 @@ The host is the only node that changes scenes. Menu, play, and pause enqueue a `
 
 `SceneStack` keeps path strings. The host calls `paths()` and syncs `Content` as **layers**: `PUSH` adds a child without freeing lower scenes; `POP` frees only the top child; `REPLACE` rebuilds from the mismatch point. Lower layers use `PROCESS_MODE_DISABLED` while an overlay is on top, so play stops stepping the sim during pause.
 
-`QUIT` stays in the `apply` result and does not pop the stack. The host sees that kind and quits the tree.
+`QUIT` stays in the `apply` result and does not pop the stack. The pong host treats Quit as return-to-lab when nested under the lab shell; standalone it quits the tree.
 
 Leaving pause for the main menu is a **batch**: `POP` then `REPLACE` menu (pause alone must not `REPLACE`, or play would remain under the menu).
 
@@ -44,7 +44,7 @@ stateDiagram-v2
   pause --> menu: QuitToMenu
   play --> gameOver: sim_game_over
   gameOver --> menu: EnterOrEscape
-  menu --> quitGame: Quit
+  menu --> labLauncher: Quit
 ```
 
 ```mermaid

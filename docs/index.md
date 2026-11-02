@@ -2,16 +2,17 @@
 title: Documentation map
 diataxis: reference
 audience: [ai, human]
-related_code: [project.godot, engine/, games/, tests/]
+related_code: [project.godot, engine/, lab/, games/, tests/]
 related_docs:
   - explanation/architecture.md
   - reference/source-layout.md
+  - reference/lab-shell.md
   - how-to/build-and-test.md
   - how-to/write-headless-tests.md
   - how-to/add-a-game.md
   - tutorials/create_new_game.md
 keywords: [index, diataxis, map]
-last_reviewed: 2026-11-01
+last_reviewed: 2026-11-02
 ---
 
 # Documentation map
@@ -22,7 +23,7 @@ Cross-game and engine docs for the **godot-game** lab (Godot 4.x, typed GDScript
 
 | Doc | Purpose |
 |-----|---------|
-| [architecture.md](explanation/architecture.md) | Headless First, sim vs app, scene-flow contract |
+| [architecture.md](explanation/architecture.md) | Headless First, nested lab shell, scene-flow |
 
 ## How-to
 
@@ -43,6 +44,7 @@ Cross-game and engine docs for the **godot-game** lab (Godot 4.x, typed GDScript
 | Doc | Purpose |
 |-----|---------|
 | [source-layout.md](reference/source-layout.md) | Inventory of paths and suites |
+| [lab-shell.md](reference/lab-shell.md) | Lab host, launcher, nested quit |
 | [engine-scene-stack.md](reference/engine-scene-stack.md) | `SceneRequest` and `SceneStack` |
 | [engine-core.md](reference/engine-core.md) | Fixed tick length and seeded RNG |
 
@@ -50,4 +52,4 @@ Cross-game and engine docs for the **godot-game** lab (Godot 4.x, typed GDScript
 
 | Game | Docs |
 |------|------|
-| [pong](../games/pong/docs/index.md) | `PongSim` rally plus menu, play, pause overlay, and game-over |
+| [pong](../games/pong/docs/index.md) | `PongSim` rally plus menu, play, pause; Quit returns to lab |

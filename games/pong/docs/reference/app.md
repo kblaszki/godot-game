@@ -31,7 +31,7 @@ last_reviewed: 2026-11-02
 
 # Pong app
 
-Presentation for Pong lives in `games/pong/app/`. `project.godot` sets `run/main_scene` to `res://games/pong/app/host.tscn`. Scenes draw with `ColorRect` and `Label` nodes. They do not embed rally rules.
+Presentation for Pong lives in `games/pong/app/`. The game entry is `host.tscn` (extends `lab/layered_host.gd`), launched from the lab shell. Scenes draw with `ColorRect` and `Label` nodes. They do not embed rally rules.
 
 ```mermaid
 classDiagram
@@ -56,22 +56,14 @@ classDiagram
 
 ## Host
 
-`host.tscn` is a `Control` named `Host` with script `host.gd`. Its child `Content` is a full-rect `Control`.
-
-| Piece | Behavior |
-|-------|----------|
-| `SceneStack` | Owns path stack and pending requests. |
-| `_ready` | Sizes the window to `PongConfig`, `submit`s replace of the main menu, flushes. |
-| `submit(req)` | Queues a request. Children walk parents for `submit`. |
-| `_flush` | Applies the stack, quits on `QUIT`, then `sync_layers(paths())`. |
-| `sync_layers` | Matches `Content` children to stack paths (meta `scene_path`). Keeps matching prefix; frees only the mismatched suffix; instances missing tops. Disables process on every layer except the top. |
+`host.tscn` extends `LayeredHost`. `_boot` sizes the window to `PongConfig` and `REPLACE`s the main menu. `_on_quit_requested` calls lab `return_to_launcher` (deferred) when nested; otherwise `get_tree().quit()` for standalone/tests.
 
 ## Main menu
 
 | Button | Request |
 |--------|---------|
 | Start | `REPLACE` play |
-| Quit | `QUIT` |
+| Quit | `QUIT` → returns to lab launcher when nested |
 
 ## Play
 

@@ -2,12 +2,13 @@
 title: Source layout
 diataxis: reference
 audience: [ai, human]
-related_code: [project.godot, engine/, games/, tests/, docs/, AGENTS.md, addons/gut/]
+related_code: [project.godot, engine/, lab/, games/, tests/, docs/, AGENTS.md, addons/gut/]
 related_docs:
   - ../index.md
   - ../explanation/architecture.md
   - engine-core.md
   - engine-scene-stack.md
+  - lab-shell.md
 keywords: [layout, inventory, paths, tests]
 last_reviewed: 2026-11-02
 ---
@@ -20,23 +21,32 @@ Inventory of the lab tree. Update this page when paths are added, removed, or re
 
 | Path | Role |
 |------|------|
-| `project.godot` | Godot 4.x lab; GUT enabled; InputMap `pong_*`; `run/main_scene` is pong host |
+| `project.godot` | Godot 4.x lab; GUT enabled; InputMap `pong_*`; `run/main_scene` is `lab/lab_host.tscn` |
 | `AGENTS.md` | Tool-neutral agent summary |
 | `engine/` | Shared headless GDScript libraries |
-| `engine/empty_boot.tscn` | Placeholder scene. `run/main_scene` is the pong host |
+| `lab/` | LayeredHost, lab host, launcher |
 | `games/` | Per-game `sim/`, `app/`, `docs/` |
-| `tests/engine/` | GUT suites for `engine/` (`*_test.gd`) |
+| `tests/engine/` | GUT suites for `engine/` |
+| `tests/lab/` | GUT suites for lab shell |
 | `tests/games/` | Per-game GUT suites |
 | `docs/` | Cross-game Diátaxis docs |
 | `addons/gut/` | GUT **9.3.1** (vendored, plugin enabled) |
 | `.cursor/rules/` | Cursor rules |
 | `.cursor/skills/` | Cursor skills |
 
+## Lab
+
+| Path | Notes |
+|------|-------|
+| `lab/layered_host.gd` | Shared layered `SceneStack` host |
+| `lab/lab_host.gd` | Main scene host; `return_to_launcher` |
+| `lab/launcher.gd` | Game registry UI |
+
 ## Games
 
 | Game | sim | app | docs | tests |
 |------|-----|-----|------|-------|
-| pong | `games/pong/sim/pong_config.gd`, `games/pong/sim/pong_sim.gd` | layered host + `main_menu`, `play`, `pause_menu` (`host.tscn` is `run/main_scene`) | `games/pong/docs/` | `pong_sim_test.gd`, `pong_host_flow_test.gd` |
+| pong | `pong_config.gd`, `pong_sim.gd` | host extends LayeredHost + menu/play/pause | `games/pong/docs/` | `pong_sim_test.gd`, `pong_host_flow_test.gd` |
 
 ## Engine modules
 
@@ -46,19 +56,14 @@ Inventory of the lab tree. Update this page when paths are added, removed, or re
 | `engine/seeded_rng.gd` | `SeededRng` seeded RNG wrapper |
 | `engine/scene_request.gd` | `SceneRequest` PUSH/POP/REPLACE/QUIT |
 | `engine/scene_stack.gd` | `SceneStack` request queue + apply + `paths()` |
-| `engine/empty_boot.tscn` | Placeholder scene. `run/main_scene` is the pong host |
 
-## Engine tests
+## Tests
 
 | Suite | Covers |
 |-------|--------|
 | `tests/engine/fixed_tick_test.gd` | `FixedTick.SEC` |
 | `tests/engine/seeded_rng_test.gd` | same-seed / different-seed |
-| `tests/engine/scene_stack_test.gd` | `SceneStack` apply batch + `paths()` |
-
-## Game tests
-
-| Suite | Covers |
-|-------|--------|
+| `tests/engine/scene_stack_test.gd` | `SceneStack` apply + `paths()` |
+| `tests/lab/lab_host_flow_test.gd` | launcher ↔ pong host nesting |
 | `tests/games/pong/pong_sim_test.gd` | sim determinism / AI / scoring |
-| `tests/games/pong/pong_host_flow_test.gd` | layered host pause keep-alive |
+| `tests/games/pong/pong_host_flow_test.gd` | pause keep-alive |
