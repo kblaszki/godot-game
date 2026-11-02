@@ -34,6 +34,7 @@ Inventory of the lab tree. Update this page when paths are added, removed, or re
 | `tests/games/` | Per-game GUT suites |
 | `docs/` | Cross-game Diátaxis docs |
 | `addons/gut/` | GUT **9.3.1** (vendored, plugin enabled) |
+| `.github/workflows/ci.yml` | Ubuntu smoke + GUT (Godot 4.3) |
 | `.cursor/rules/` | Cursor rules |
 | `.cursor/skills/` | Cursor skills |
 

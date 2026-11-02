@@ -32,7 +32,7 @@ Cross-game and engine docs for the **godot-game** lab (Godot 4.x, typed GDScript
 
 | Doc | Purpose |
 |-----|---------|
-| [build-and-test.md](how-to/build-and-test.md) | Load project and run GUT |
+| [build-and-test.md](how-to/build-and-test.md) | Load project, run GUT, CI workflow |
 | [write-headless-tests.md](how-to/write-headless-tests.md) | Sim/engine GUT conventions |
 | [add-a-game.md](how-to/add-a-game.md) | Checklist to scaffold a new game |
 

@@ -1,0 +1,36 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Godot 4.3
+        run: |
+          set -euo pipefail
+          curl -fsSL -o godot.zip \
+            https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q godot.zip
+          mkdir -p "$HOME/.local/bin"
+          install -m 755 Godot_v4.3-stable_linux.x86_64 "$HOME/.local/bin/godot"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Import project
+        run: godot --path . --headless --import
+
+      - name: Smoke load
+        run: godot --path . --headless --quit-after 1
+
+      - name: GUT
+        run: |
+          godot --path . --headless -s addons/gut/gut_cmdln.gd \
+            -gdir=res://tests -ginclude_subdirs \
+            -gprefix="" -gsuffix="_test.gd" -gexit
