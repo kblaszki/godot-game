@@ -28,6 +28,7 @@ func _ready() -> void:
 	_sim = SnakeSim.new(_config, SeededRng.new(FOOD_SEED))
 	_audio = _find_audio()
 	_layout_board()
+	_fit_to_viewport()
 	_sync_view()
 
 
@@ -112,6 +113,15 @@ func _layout_board() -> void:
 	_banner_panel.size = panel_size
 	_banner.position = panel_pos
 	_banner.size = panel_size
+
+
+func _fit_to_viewport() -> void:
+	var board_size := Vector2(_config.width * _config.cell, _config.height * _config.cell)
+	var content := Vector2(board_size.x, board_size.y + 40.0)
+	var fit := ViewFit.compute(content, get_viewport().get_visible_rect().size)
+	var fit_scale: float = fit["scale"]
+	scale = Vector2(fit_scale, fit_scale)
+	position = fit["offset"]
 
 
 func _sync_view() -> void:

@@ -18,6 +18,7 @@ related_code:
   - engine/fixed_tick.gd
   - engine/seeded_rng.gd
   - engine/input_state.gd
+  - engine/view_fit.gd
   - project.godot
   - tests/games/pong/pong_host_flow_test.gd
 related_docs:
@@ -27,7 +28,9 @@ related_docs:
   - ../../../../docs/explanation/architecture.md
   - ../../../../docs/reference/engine-scene-stack.md
   - ../../../../docs/reference/engine-input.md
-keywords: [pong, app, host, menu, play, pause, SceneStack, InputMap, InputState]
+  - ../../../../docs/reference/engine-core.md
+  - ../../../../docs/reference/lab-shell.md
+keywords: [pong, app, host, menu, play, pause, SceneStack, InputMap, InputState, ViewFit]
 last_reviewed: 2026-11-02
 ---
 
@@ -58,7 +61,7 @@ classDiagram
 
 ## Host
 
-`host.tscn` extends `LayeredHost`. `_boot` sizes the window to `PongConfig` and `REPLACE`s the main menu. `_on_quit_requested` calls lab `return_to_launcher` (deferred) when nested; otherwise `get_tree().quit()` for standalone/tests.
+`host.tscn` extends `LayeredHost`. `_boot` `REPLACE`s the main menu. Window size/fullscreen belong to the lab shell (`WindowApplier`); the host does not resize the window. `_on_quit_requested` calls lab `return_to_launcher` (deferred) when nested; otherwise `get_tree().quit()` for standalone/tests.
 
 ## Main menu
 
@@ -70,6 +73,8 @@ classDiagram
 ## Play
 
 Builds `PongConfig`, `SeededRng(1)`, and `PongSim`. Steps on `FixedTick.SEC`. Each physics frame samples movement into an `InputState` (`pong_move_up` / `pong_move_down` → `get_axis`), then calls `set_input`. Pause and game-over still use `_unhandled_input`.
+
+After layout, play calls `ViewFit.compute` with court size and the visible viewport, then sets `scale` / `position` so the court fills the lab viewport while sim coordinates stay unchanged.
 
 | Action | Binding |
 |--------|---------|

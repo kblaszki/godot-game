@@ -25,6 +25,7 @@ func _ready() -> void:
 	_config = PongConfig.new()
 	_sim = PongSim.new(_config, SeededRng.new(SERVE_SEED))
 	_layout()
+	_fit_to_viewport()
 	_sync_view()
 
 
@@ -87,6 +88,14 @@ func _layout() -> void:
 	_banner_panel.size = panel_size
 	_banner.position = panel_pos
 	_banner.size = panel_size
+
+
+func _fit_to_viewport() -> void:
+	var content := Vector2(_config.court_width, _config.court_height)
+	var fit := ViewFit.compute(content, get_viewport().get_visible_rect().size)
+	var fit_scale: float = fit["scale"]
+	scale = Vector2(fit_scale, fit_scale)
+	position = fit["offset"]
 
 
 func _sync_view() -> void:

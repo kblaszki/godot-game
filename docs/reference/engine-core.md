@@ -5,18 +5,23 @@ audience: [ai, human]
 related_code:
   - engine/fixed_tick.gd
   - engine/seeded_rng.gd
+  - engine/view_fit.gd
+  - tests/engine/fixed_tick_test.gd
+  - tests/engine/seeded_rng_test.gd
+  - tests/engine/view_fit_test.gd
 related_docs:
   - ../index.md
   - ../explanation/architecture.md
   - engine-input.md
+  - lab-shell.md
   - ../how-to/write-headless-tests.md
-keywords: [fixed-tick, seeded-rng, determinism, headless]
+keywords: [fixed-tick, seeded-rng, view-fit, determinism, headless]
 last_reviewed: 2026-11-02
 ---
 
 # Engine core
 
-Headless types shared by every game sim. Both are `RefCounted` scripts under `engine/` with a `class_name`. They do not use `Node`, the scene tree, wall-clock time, or unseeded `rand*`.
+Headless types shared by every game sim (and presentation math that stays Node-free). They are `RefCounted` scripts under `engine/` with a `class_name`. They do not use `Node`, the scene tree, wall-clock time, or unseeded `rand*`.
 
 ```mermaid
 classDiagram
@@ -29,8 +34,12 @@ classDiagram
     +randi_range(from, to)
     +randf_range(from, to)
   }
+  class ViewFit {
+    +compute(content, viewport)$
+  }
   FixedTick --|> RefCounted
   SeededRng --|> RefCounted
+  ViewFit --|> RefCounted
 ```
 
 ## FixedTick
@@ -55,3 +64,11 @@ Sim time advances only in multiples of `FixedTick.SEC` (one sixtieth of a second
 | `randf_range(from, to)` | `float` | Next float in `[from, to]`. |
 
 The same seed and the same call order produce the same values. A different seed produces a different sequence. Draws stay on this instance; the type does not call global `randf`, `randi`, or `randf_range`.
+
+## ViewFit
+
+`ViewFit` computes a uniform scale and centered offset so a content size fits inside a viewport (`engine/view_fit.gd`). Presentation code applies the result to a `Node2D`; sims do not call it.
+
+| API | Behavior |
+|-----|----------|
+| `compute(content, viewport)` | Returns `{ "scale": float, "offset": Vector2 }` with `scale = min(vp/content)` and centered offset; non-positive sizes → scale `1`, offset `ZERO` |

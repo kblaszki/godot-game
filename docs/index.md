@@ -49,7 +49,7 @@ Cross-game and engine docs for the **godot-game** lab (Godot 4.x, typed GDScript
 | [source-layout.md](reference/source-layout.md) | Inventory of paths and suites |
 | [lab-shell.md](reference/lab-shell.md) | Lab host, launcher, nested quit |
 | [engine-scene-stack.md](reference/engine-scene-stack.md) | `SceneRequest` and `SceneStack` |
-| [engine-core.md](reference/engine-core.md) | Fixed tick length and seeded RNG |
+| [engine-core.md](reference/engine-core.md) | Fixed tick, seeded RNG, `ViewFit` |
 | [engine-input.md](reference/engine-input.md) | Headless `InputState` for action held/edges |
 | [engine-save.md](reference/engine-save.md) | `HighScoreTable`, `ScoreStore`, `LabSettings`, `SettingsStore` |
 | [engine-audio.md](reference/engine-audio.md) | `NullAudio` port and `GodotAudio` lab adapter |
