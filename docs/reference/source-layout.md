@@ -7,6 +7,7 @@ related_docs:
   - ../index.md
   - ../explanation/architecture.md
   - engine-core.md
+  - engine-input.md
   - engine-scene-stack.md
   - lab-shell.md
 keywords: [layout, inventory, paths, tests]
@@ -55,6 +56,7 @@ Inventory of the lab tree. Update this page when paths are added, removed, or re
 |------|-------|
 | `engine/fixed_tick.gd` | `FixedTick.SEC` fixed step |
 | `engine/seeded_rng.gd` | `SeededRng` seeded RNG wrapper |
+| `engine/input_state.gd` | `InputState` held/edge actions |
 | `engine/scene_request.gd` | `SceneRequest` PUSH/POP/REPLACE/QUIT |
 | `engine/scene_stack.gd` | `SceneStack` request queue + apply + `paths()` |
 
@@ -64,6 +66,7 @@ Inventory of the lab tree. Update this page when paths are added, removed, or re
 |-------|--------|
 | `tests/engine/fixed_tick_test.gd` | `FixedTick.SEC` |
 | `tests/engine/seeded_rng_test.gd` | same-seed / different-seed |
+| `tests/engine/input_state_test.gd` | `InputState` held/edges/axis |
 | `tests/engine/scene_stack_test.gd` | `SceneStack` apply + `paths()` |
 | `tests/lab/lab_host_flow_test.gd` | launcher ↔ pong host nesting |
 | `tests/games/pong/pong_sim_test.gd` | sim determinism / AI / scoring |

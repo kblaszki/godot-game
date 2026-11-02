@@ -17,6 +17,7 @@ related_code:
   - engine/scene_request.gd
   - engine/fixed_tick.gd
   - engine/seeded_rng.gd
+  - engine/input_state.gd
   - project.godot
   - tests/games/pong/pong_host_flow_test.gd
 related_docs:
@@ -25,7 +26,8 @@ related_docs:
   - sim.md
   - ../../../../docs/explanation/architecture.md
   - ../../../../docs/reference/engine-scene-stack.md
-keywords: [pong, app, host, menu, play, pause, SceneStack, InputMap]
+  - ../../../../docs/reference/engine-input.md
+keywords: [pong, app, host, menu, play, pause, SceneStack, InputMap, InputState]
 last_reviewed: 2026-11-02
 ---
 
@@ -67,7 +69,7 @@ classDiagram
 
 ## Play
 
-Builds `PongConfig`, `SeededRng(1)`, and `PongSim`. Steps on `FixedTick.SEC`.
+Builds `PongConfig`, `SeededRng(1)`, and `PongSim`. Steps on `FixedTick.SEC`. Each physics frame samples movement into an `InputState` (`pong_move_up` / `pong_move_down` → `get_axis`), then calls `set_input`. Pause and game-over still use `_unhandled_input`.
 
 | Action | Binding |
 |--------|---------|

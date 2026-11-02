@@ -6,6 +6,7 @@ const FOOD_SEED := 1
 
 var _config: SnakeConfig
 var _sim: SnakeSim
+var _input: InputState = InputState.new()
 var _accum: float = 0.0
 var _leaving: bool = false
 var _body_rects: Array[ColorRect] = []
@@ -50,18 +51,19 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _apply_input() -> void:
-	var dx := 0
-	var dy := 0
-	if Input.is_action_pressed("snake_left"):
-		dx = -1
-	elif Input.is_action_pressed("snake_right"):
-		dx = 1
-	elif Input.is_action_pressed("snake_up"):
-		dy = -1
-	elif Input.is_action_pressed("snake_down"):
-		dy = 1
-	if dx != 0 or dy != 0:
-		_sim.set_input(dx, dy)
+	_input.begin_frame()
+	_input.set_action(&"snake_left", Input.is_action_pressed("snake_left"))
+	_input.set_action(&"snake_right", Input.is_action_pressed("snake_right"))
+	_input.set_action(&"snake_up", Input.is_action_pressed("snake_up"))
+	_input.set_action(&"snake_down", Input.is_action_pressed("snake_down"))
+	if _input.is_action_pressed(&"snake_left"):
+		_sim.set_input(-1, 0)
+	elif _input.is_action_pressed(&"snake_right"):
+		_sim.set_input(1, 0)
+	elif _input.is_action_pressed(&"snake_up"):
+		_sim.set_input(0, -1)
+	elif _input.is_action_pressed(&"snake_down"):
+		_sim.set_input(0, 1)
 
 
 func _layout_board() -> void:

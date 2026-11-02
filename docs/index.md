@@ -7,6 +7,7 @@ related_docs:
   - explanation/architecture.md
   - reference/source-layout.md
   - reference/lab-shell.md
+  - reference/engine-input.md
   - how-to/build-and-test.md
   - how-to/write-headless-tests.md
   - how-to/add-a-game.md
@@ -47,6 +48,7 @@ Cross-game and engine docs for the **godot-game** lab (Godot 4.x, typed GDScript
 | [lab-shell.md](reference/lab-shell.md) | Lab host, launcher, nested quit |
 | [engine-scene-stack.md](reference/engine-scene-stack.md) | `SceneRequest` and `SceneStack` |
 | [engine-core.md](reference/engine-core.md) | Fixed tick length and seeded RNG |
+| [engine-input.md](reference/engine-input.md) | Headless `InputState` for action held/edges |
 
 ## Game documentation
 

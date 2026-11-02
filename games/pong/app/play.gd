@@ -6,6 +6,7 @@ const SERVE_SEED := 1
 
 var _config: PongConfig
 var _sim: PongSim
+var _input: InputState = InputState.new()
 var _accum: float = 0.0
 var _winner: String = ""
 var _leaving: bool = false
@@ -29,7 +30,8 @@ func _ready() -> void:
 
 func _physics_process(delta: float) -> void:
 	if _sim.get_status() != "game_over":
-		_sim.set_input(_read_left_dir(), 0)
+		_sample_input()
+		_sim.set_input(int(_input.get_axis(&"pong_move_up", &"pong_move_down")), 0)
 		_accum += delta
 		while _accum >= FixedTick.SEC:
 			_accum -= FixedTick.SEC
@@ -52,14 +54,10 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
-func _read_left_dir() -> int:
-	var up := Input.is_action_pressed("pong_move_up")
-	var down := Input.is_action_pressed("pong_move_down")
-	if up == down:
-		return 0
-	if up:
-		return -1
-	return 1
+func _sample_input() -> void:
+	_input.begin_frame()
+	_input.set_action(&"pong_move_up", Input.is_action_pressed("pong_move_up"))
+	_input.set_action(&"pong_move_down", Input.is_action_pressed("pong_move_down"))
 
 
 func _collect(events: Array) -> void:

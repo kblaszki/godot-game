@@ -8,9 +8,10 @@ related_code:
 related_docs:
   - ../index.md
   - ../explanation/architecture.md
+  - engine-input.md
   - ../how-to/write-headless-tests.md
 keywords: [fixed-tick, seeded-rng, determinism, headless]
-last_reviewed: 2026-11-01
+last_reviewed: 2026-11-02
 ---
 
 # Engine core
