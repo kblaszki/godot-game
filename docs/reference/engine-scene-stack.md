@@ -10,12 +10,12 @@ related_docs:
   - ../index.md
   - ../explanation/architecture.md
 keywords: [SceneRequest, SceneStack, scene-flow, push, pop, replace, quit]
-last_reviewed: 2026-11-01
+last_reviewed: 2026-11-02
 ---
 
 # Scene stack
 
-Headless scene-flow types in `engine/`. They store path strings and request kinds. A host under `games/<name>/app/` (or a future lab launcher) reads the result and performs the Godot scene change.
+Headless scene-flow types in `engine/`. They store path strings and request kinds. A host under `games/<name>/app/` (or a future lab launcher) reads the result and performs the Godot scene change. Overlay hosts call `paths()` and keep lower scenes alive when the stack grows.
 
 ## SceneRequest
 
@@ -45,6 +45,7 @@ Internal stack of scene path strings plus a pending request queue.
 | `apply()` | Applies the queued requests in order, clears the queue, and returns those requests. |
 | `peek()` | Current top path, or `""` when the stack is empty. |
 | `depth()` | Number of paths on the stack. |
+| `paths()` | Copy of the full path stack (bottom → top). Mutating the return value does not change the stack. |
 
 `apply` rules:
 

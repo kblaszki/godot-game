@@ -29,6 +29,10 @@ func depth() -> int:
 	return _paths.size()
 
 
+func paths() -> Array[String]:
+	return _paths.duplicate()
+
+
 func _apply_one(req: SceneRequest) -> void:
 	match req.kind:
 		SceneRequest.Kind.PUSH:

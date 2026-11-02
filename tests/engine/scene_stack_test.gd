@@ -86,3 +86,25 @@ func test_apply_should_push_when_replace_starts_empty() -> void:
 	stack.apply()
 	assert_eq(stack.peek(), "res://menu.tscn")
 	assert_eq(stack.depth(), 1)
+
+
+func test_paths_should_return_full_stack_copy() -> void:
+	var stack := SceneStack.new()
+	assert_eq(stack.paths().size(), 0)
+	stack.request(SceneRequest.push("res://menu.tscn"))
+	stack.request(SceneRequest.push("res://play.tscn"))
+	stack.apply()
+	var snapshot: Array[String] = stack.paths()
+	assert_eq(snapshot.size(), 2)
+	assert_eq(snapshot[0], "res://menu.tscn")
+	assert_eq(snapshot[1], "res://play.tscn")
+	snapshot[0] = "res://mutated.tscn"
+	assert_eq(stack.paths()[0], "res://menu.tscn")
+	stack.request(SceneRequest.pop())
+	stack.apply()
+	assert_eq(stack.paths().size(), 1)
+	assert_eq(stack.paths()[0], "res://menu.tscn")
+	stack.request(SceneRequest.replace("res://other.tscn"))
+	stack.apply()
+	assert_eq(stack.paths().size(), 1)
+	assert_eq(stack.paths()[0], "res://other.tscn")
