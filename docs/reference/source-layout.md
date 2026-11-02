@@ -2,7 +2,7 @@
 title: Source layout
 diataxis: reference
 audience: [ai, human]
-related_code: [project.godot, engine/, lab/, games/, tests/, docs/, AGENTS.md, addons/gut/]
+related_code: [project.godot, engine/, lab/, games/, tests/, docs/, AGENTS.md, addons/gut/, .gutconfig.json]
 related_docs:
   - ../index.md
   - ../explanation/architecture.md
@@ -34,6 +34,7 @@ Inventory of the lab tree. Update this page when paths are added, removed, or re
 | `tests/games/` | Per-game GUT suites |
 | `docs/` | Cross-game Diátaxis docs |
 | `addons/gut/` | GUT **9.3.1** (vendored, plugin enabled) |
+| `.gutconfig.json` | GUT dirs/prefix/suffix/`should_exit` for CLI and CI |
 | `.github/workflows/ci.yml` | Ubuntu smoke + GUT (Godot 4.3) |
 | `.cursor/rules/` | Cursor rules |
 | `.cursor/skills/` | Cursor skills |

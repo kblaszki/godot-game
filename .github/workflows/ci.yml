@@ -30,7 +30,4 @@ jobs:
         run: godot --path . --headless --quit-after 1
 
       - name: GUT
-        run: |
-          godot --path . --headless -s addons/gut/gut_cmdln.gd \
-            -gdir=res://tests -ginclude_subdirs \
-            -gprefix="" -gsuffix="_test.gd" -gexit
+        run: godot --path . --headless -s addons/gut/gut_cmdln.gd

@@ -39,8 +39,8 @@ Godot 4.x GDScript game lab. Shared code lives in `engine/` (`class_name` / `Ref
 # Project must load (editor or headless). Prefer the godot binary on PATH.
 godot --path . --headless --quit-after 1
 
-# Unit tests (requires GUT installed under addons/gut/)
-godot --path . --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests -gexit
+# Unit tests (GUT vendored; options in .gutconfig.json)
+godot --path . --headless -s addons/gut/gut_cmdln.gd
 ```
 
 Details: `docs/how-to/build-and-test.md` and the `run-build-and-tests` skill.

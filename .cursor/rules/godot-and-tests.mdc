@@ -16,14 +16,13 @@ alwaysApply: false
 ## Tests (GUT, headless)
 
 ```sh
-godot --path . --headless -s addons/gut/gut_cmdln.gd \
-  -gdir=res://tests -ginclude_subdirs \
-  -gprefix="" -gsuffix="_test.gd" -gexit
+godot --path . --headless -s addons/gut/gut_cmdln.gd
 ```
 
+- Options live in `.gutconfig.json` (`dirs`, empty `prefix`, `suffix` `_test.gd`, `include_subdirs`, `should_exit`)
 - Suites live in `tests/engine/` and `tests/games/<name>/`
-- Name test scripts `*_test.gd` (use `-gprefix="" -gsuffix="_test.gd"`); methods `test_*_should_*`
+- Name test scripts `*_test.gd`; methods `test_*_should_*`
 - Tests open no window (`--headless`)
-- GUT lives under `addons/gut/` when installed — see `docs/how-to/build-and-test.md`
+- GUT is vendored under `addons/gut/` — see `docs/how-to/build-and-test.md`
 
 When changing a module, update or add unit tests under the matching `tests/engine/` or `tests/games/<name>/` leaf. Recipes: `docs/how-to/write-headless-tests.md`.

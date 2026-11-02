@@ -13,7 +13,7 @@ Forbidden paths: (everything else, especially siblings in this wave)
 Locked signatures: (paste from contract)
 Read first: (existing scripts, contract, listed docs)
 Verify: godot --path . --headless --quit-after 1
-        && godot --path . --headless -s addons/gut/gut_cmdln.gd -gdir=res://tests -gexit
+        && godot --path . --headless -s addons/gut/gut_cmdln.gd
         (or “no code — skip verify”)
 ```
 

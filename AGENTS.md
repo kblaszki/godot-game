@@ -6,12 +6,10 @@ This is a Godot **4.x** game lab using typed **GDScript**. Shared code lives in 
 
 ```sh
 godot --path . --headless --quit-after 1
-godot --path . --headless -s addons/gut/gut_cmdln.gd \
-  -gdir=res://tests -ginclude_subdirs \
-  -gprefix="" -gsuffix="_test.gd" -gexit
+godot --path . --headless -s addons/gut/gut_cmdln.gd
 ```
 
-GUT must be installed under `addons/gut/` before unit tests can run. Details: [`docs/how-to/build-and-test.md`](docs/how-to/build-and-test.md).
+On a fresh clone (or after adding a `class_name`), run `godot --path . --headless --import` first. GUT options live in [`.gutconfig.json`](.gutconfig.json). Details: [`docs/how-to/build-and-test.md`](docs/how-to/build-and-test.md).
 
 ## Where to read first
 
