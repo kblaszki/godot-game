@@ -2,6 +2,8 @@ extends Node2D
 
 const MENU_PATH := "res://games/snake/app/main_menu.tscn"
 const PAUSE_PATH := "res://games/snake/app/pause_menu.tscn"
+const SCORE_PATH := "user://scores/snake.txt"
+const SCORE_CAPACITY := 10
 const FOOD_SEED := 1
 
 var _config: SnakeConfig
@@ -9,6 +11,7 @@ var _sim: SnakeSim
 var _input: InputState = InputState.new()
 var _accum: float = 0.0
 var _leaving: bool = false
+var _score_saved: bool = false
 var _body_rects: Array[ColorRect] = []
 
 @onready var _board: ColorRect = $Board
@@ -33,7 +36,18 @@ func _physics_process(delta: float) -> void:
 		while _accum >= FixedTick.SEC:
 			_accum -= FixedTick.SEC
 			_sim.step(FixedTick.SEC)
+		if _sim.get_status() == "game_over":
+			_persist_score()
 	_sync_view()
+
+
+func _persist_score() -> void:
+	if _score_saved:
+		return
+	_score_saved = true
+	var table := ScoreStore.load(SCORE_PATH, SCORE_CAPACITY)
+	if table.insert(_sim.get_score()) >= 0:
+		ScoreStore.save(SCORE_PATH, table)
 
 
 func _unhandled_input(event: InputEvent) -> void:
