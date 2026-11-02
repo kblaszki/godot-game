@@ -9,6 +9,7 @@ related_docs:
   - reference/lab-shell.md
   - reference/engine-input.md
   - reference/engine-save.md
+  - reference/engine-audio.md
   - how-to/build-and-test.md
   - how-to/write-headless-tests.md
   - how-to/add-a-game.md
@@ -51,6 +52,7 @@ Cross-game and engine docs for the **godot-game** lab (Godot 4.x, typed GDScript
 | [engine-core.md](reference/engine-core.md) | Fixed tick length and seeded RNG |
 | [engine-input.md](reference/engine-input.md) | Headless `InputState` for action held/edges |
 | [engine-save.md](reference/engine-save.md) | `HighScoreTable` and `ScoreStore` |
+| [engine-audio.md](reference/engine-audio.md) | `NullAudio` port and `GodotAudio` lab adapter |
 
 ## Game documentation
 

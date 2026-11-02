@@ -9,6 +9,7 @@ const FOOD_SEED := 1
 var _config: SnakeConfig
 var _sim: SnakeSim
 var _input: InputState = InputState.new()
+var _audio = NullAudio.new()
 var _accum: float = 0.0
 var _leaving: bool = false
 var _score_saved: bool = false
@@ -25,6 +26,7 @@ var _body_rects: Array[ColorRect] = []
 func _ready() -> void:
 	_config = SnakeConfig.new()
 	_sim = SnakeSim.new(_config, SeededRng.new(FOOD_SEED))
+	_audio = _find_audio()
 	_layout_board()
 	_sync_view()
 
@@ -35,10 +37,28 @@ func _physics_process(delta: float) -> void:
 		_accum += delta
 		while _accum >= FixedTick.SEC:
 			_accum -= FixedTick.SEC
-			_sim.step(FixedTick.SEC)
-		if _sim.get_status() == "game_over":
-			_persist_score()
+			_handle_events(_sim.step(FixedTick.SEC))
 	_sync_view()
+
+
+func _handle_events(events: Array) -> void:
+	for item in events:
+		var data := item as Dictionary
+		match str(data.get("type", "")):
+			"ate":
+				_audio.play(&"eat")
+			"game_over":
+				_audio.play(&"die")
+				_persist_score()
+
+
+func _find_audio():
+	var node: Node = get_parent()
+	while node != null:
+		if node.has_method("get_audio"):
+			return node.call("get_audio")
+		node = node.get_parent()
+	return NullAudio.new()
 
 
 func _persist_score() -> void:

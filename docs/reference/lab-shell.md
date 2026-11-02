@@ -9,6 +9,7 @@ related_code:
   - lab/lab_host.tscn
   - lab/launcher.gd
   - lab/launcher.tscn
+  - lab/godot_audio.gd
   - project.godot
   - tests/lab/lab_host_flow_test.gd
 related_docs:
@@ -17,7 +18,8 @@ related_docs:
   - ../how-to/add-a-game.md
   - source-layout.md
   - engine-scene-stack.md
-keywords: [lab, launcher, LayeredHost, nested-host]
+  - engine-audio.md
+keywords: [lab, launcher, LayeredHost, nested-host, GodotAudio]
 last_reviewed: 2026-11-02
 ---
 
@@ -49,3 +51,7 @@ Shared base at `lab/layered_host.gd`: `SceneStack`, `submit`, `_flush`, `sync_la
 ## Nested quit
 
 Pong menu Quit still submits `SceneRequest.quit()`. The pong host `_on_quit_requested` walks parents for `return_to_launcher` and calls it deferred. Standalone pong host (tests) falls back to `get_tree().quit()`.
+
+## GodotAudio
+
+`lab/godot_audio.gd` is the Node playback adapter for the duck-typed audio port (see [engine-audio](engine-audio.md)). Game hosts may own one instance and expose `get_audio()` for play scenes.
