@@ -62,20 +62,31 @@ theme_override_colors/font_color = Color(0.9, 0.95, 1, 1)
 theme_override_font_sizes/font_size = 18
 text = "Turn"
 
+[node name="Offer" type="Label" parent="Hud"]
+visible = false
+layout_mode = 0
+offset_left = 16.0
+offset_top = 48.0
+offset_right = 340.0
+offset_bottom = 78.0
+theme_override_colors/font_color = Color(1, 0.85, 0.45, 1)
+theme_override_font_sizes/font_size = 14
+text = "Offer"
+
 [node name="Roster" type="VBoxContainer" parent="Hud"]
 layout_mode = 0
 offset_left = 16.0
-offset_top = 56.0
+offset_top = 86.0
 offset_right = 340.0
-offset_bottom = 220.0
+offset_bottom = 240.0
 theme_override_constants/separation = 6
 
 [node name="Log" type="Label" parent="Hud"]
 layout_mode = 0
 offset_left = 16.0
-offset_top = 230.0
+offset_top = 250.0
 offset_right = 340.0
-offset_bottom = 420.0
+offset_bottom = 430.0
 theme_override_colors/font_color = Color(0.7, 0.78, 0.86, 1)
 theme_override_font_sizes/font_size = 13
 autowrap_mode = 3
@@ -84,9 +95,9 @@ text = "Log"
 [node name="Actions" type="VBoxContainer" parent="Hud"]
 layout_mode = 0
 offset_left = 16.0
-offset_top = 440.0
+offset_top = 450.0
 offset_right = 340.0
-offset_bottom = 620.0
+offset_bottom = 640.0
 theme_override_constants/separation = 10
 
 [node name="Roll" type="Button" parent="Hud/Actions"]
