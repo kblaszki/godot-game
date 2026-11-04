@@ -1,0 +1,117 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://games/districts/app/play.gd" id="1_play"]
+
+[node name="Play" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_play")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.06, 0.08, 0.11, 1)
+
+[node name="BoardRoot" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 0.72
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Board" type="Node2D" parent="BoardRoot"]
+
+[node name="Pawns" type="Node2D" parent="BoardRoot"]
+
+[node name="Hud" type="Control" parent="."]
+layout_mode = 1
+anchor_left = 0.72
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 0
+grow_vertical = 2
+
+[node name="Panel" type="ColorRect" parent="Hud"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.1, 0.12, 0.16, 0.95)
+
+[node name="Turn" type="Label" parent="Hud"]
+layout_mode = 0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = 340.0
+offset_bottom = 48.0
+theme_override_colors/font_color = Color(0.9, 0.95, 1, 1)
+theme_override_font_sizes/font_size = 18
+text = "Turn"
+
+[node name="Roster" type="VBoxContainer" parent="Hud"]
+layout_mode = 0
+offset_left = 16.0
+offset_top = 56.0
+offset_right = 340.0
+offset_bottom = 220.0
+theme_override_constants/separation = 6
+
+[node name="Log" type="Label" parent="Hud"]
+layout_mode = 0
+offset_left = 16.0
+offset_top = 230.0
+offset_right = 340.0
+offset_bottom = 420.0
+theme_override_colors/font_color = Color(0.7, 0.78, 0.86, 1)
+theme_override_font_sizes/font_size = 13
+autowrap_mode = 3
+text = "Log"
+
+[node name="Actions" type="VBoxContainer" parent="Hud"]
+layout_mode = 0
+offset_left = 16.0
+offset_top = 440.0
+offset_right = 340.0
+offset_bottom = 620.0
+theme_override_constants/separation = 10
+
+[node name="Roll" type="Button" parent="Hud/Actions"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+text = "Roll"
+
+[node name="Buy" type="Button" parent="Hud/Actions"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+text = "Buy"
+
+[node name="Skip" type="Button" parent="Hud/Actions"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+text = "Skip"
+
+[node name="Banner" type="Label" parent="Hud"]
+visible = false
+layout_mode = 0
+offset_left = 16.0
+offset_top = 300.0
+offset_right = 340.0
+offset_bottom = 400.0
+theme_override_colors/font_color = Color(1, 0.9, 0.5, 1)
+theme_override_font_sizes/font_size = 20
+horizontal_alignment = 1
+text = "Winner"

@@ -1,0 +1,96 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://games/districts/app/setup.gd" id="1_setup"]
+
+[node name="Setup" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_setup")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.07, 0.09, 0.12, 1)
+
+[node name="Center" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Panel" type="ColorRect" parent="Center"]
+custom_minimum_size = Vector2(420, 420)
+layout_mode = 2
+color = Color(0.12, 0.15, 0.2, 0.96)
+
+[node name="Column" type="VBoxContainer" parent="Center/Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 28.0
+offset_top = 24.0
+offset_right = -28.0
+offset_bottom = -24.0
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="Center/Panel/Column"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 36
+text = "Districts"
+horizontal_alignment = 1
+
+[node name="Subtitle" type="Label" parent="Center/Panel/Column"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.78, 0.86, 1)
+text = "Claim the ring · 2–4 players"
+horizontal_alignment = 1
+
+[node name="CountRow" type="HBoxContainer" parent="Center/Panel/Column"]
+layout_mode = 2
+alignment = 1
+theme_override_constants/separation = 16
+
+[node name="Minus" type="Button" parent="Center/Panel/Column/CountRow"]
+custom_minimum_size = Vector2(44, 44)
+layout_mode = 2
+text = "-"
+
+[node name="Count" type="Label" parent="Center/Panel/Column/CountRow"]
+custom_minimum_size = Vector2(48, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 28
+text = "2"
+horizontal_alignment = 1
+
+[node name="Plus" type="Button" parent="Center/Panel/Column/CountRow"]
+custom_minimum_size = Vector2(44, 44)
+layout_mode = 2
+text = "+"
+
+[node name="Seats" type="VBoxContainer" parent="Center/Panel/Column"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Start" type="Button" parent="Center/Panel/Column"]
+custom_minimum_size = Vector2(0, 48)
+layout_mode = 2
+text = "Start match"
+
+[node name="Quit" type="Button" parent="Center/Panel/Column"]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+text = "Back to lab"
