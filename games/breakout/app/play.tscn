@@ -1,0 +1,40 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://games/breakout/app/play.gd" id="1_play"]
+
+[node name="Play" type="Node2D"]
+script = ExtResource("1_play")
+
+[node name="Background" type="ColorRect" parent="."]
+mouse_filter = 2
+color = Color(0.05, 0.06, 0.09, 1)
+
+[node name="Bricks" type="Node2D" parent="."]
+
+[node name="Paddle" type="ColorRect" parent="."]
+mouse_filter = 2
+color = Color(0.85, 0.9, 0.95, 1)
+
+[node name="Ball" type="ColorRect" parent="."]
+mouse_filter = 2
+color = Color(1, 0.92, 0.45, 1)
+
+[node name="Hud" type="Node2D" parent="."]
+
+[node name="Status" type="Label" parent="Hud"]
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 18
+text = "Score: 0    Lives: 3"
+
+[node name="BannerPanel" type="ColorRect" parent="Hud"]
+visible = false
+mouse_filter = 2
+color = Color(0.08, 0.09, 0.12, 0.92)
+
+[node name="Banner" type="Label" parent="Hud"]
+visible = false
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 22
+horizontal_alignment = 1
+vertical_alignment = 1
+text = "Cleared!"
