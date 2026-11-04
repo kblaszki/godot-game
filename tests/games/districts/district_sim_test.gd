@@ -72,6 +72,45 @@ func test_bankruptcy_should_end_game_with_other_winner() -> void:
 	assert_eq(sim.get_phase(), DistrictSim.PHASE_OVER)
 
 
+func test_bot_should_buy_when_cash_and_rent_ok() -> void:
+	var sim := _new_sim(2, 1, 6) # seat 0 is bot
+	var space_index := _first_property_index(sim)
+	var space := sim.get_config().space_at(space_index)
+	sim.get_player(0).cash = space.price + DistrictBot.CASH_BUFFER + 10
+	sim.get_player(0).position = space_index
+	sim._phase = DistrictSim.PHASE_BUY
+	sim._pending_space = space_index
+	assert_true(DistrictBot.should_buy(sim, 0))
+	var events := sim.bot_act()
+	assert_true(_has_type(events, "bought"))
+	assert_eq(sim.get_owner(space_index), 0)
+
+
+func test_bot_should_skip_when_cash_too_low() -> void:
+	var sim := _new_sim(2, 1, 7)
+	var space_index := _first_property_index(sim)
+	var space := sim.get_config().space_at(space_index)
+	sim.get_player(0).cash = space.price + DistrictBot.CASH_BUFFER - 1
+	sim._phase = DistrictSim.PHASE_BUY
+	sim._pending_space = space_index
+	assert_false(DistrictBot.should_buy(sim, 0))
+	var events := sim.bot_act()
+	assert_true(_has_type(events, "skipped_buy"))
+	assert_eq(sim.get_owner(space_index), -1)
+
+
+func test_bot_vs_bot_same_seed_should_match() -> void:
+	var left := _new_sim(2, 3, 99) # both bots
+	var right := _new_sim(2, 3, 99)
+	for _i in 80:
+		if left.get_phase() == DistrictSim.PHASE_OVER:
+			break
+		assert_eq(left.bot_act(), right.bot_act())
+	assert_eq(left.get_phase(), right.get_phase())
+	assert_eq(left.get_player(0).cash, right.get_player(0).cash)
+	assert_eq(left.get_player(1).cash, right.get_player(1).cash)
+
+
 func test_goto_jail_space_should_move_player() -> void:
 	var sim := _new_sim(2, 0, 5)
 	var goto_index := -1

@@ -152,6 +152,22 @@ func skip() -> Array:
 	return events
 
 
+## One bot decision for the current player (roll or buy/skip). Empty if human or over.
+func bot_act() -> Array:
+	if _phase == PHASE_OVER:
+		return []
+	var player := _players[_current]
+	if player.bankrupt or not player.is_bot:
+		return []
+	if _phase == PHASE_ROLL:
+		return roll()
+	if _phase == PHASE_BUY:
+		if DistrictBot.should_buy(self, _current):
+			return buy()
+		return skip()
+	return []
+
+
 func _roll_from_jail(events: Array) -> Array:
 	var player := _players[_current]
 	var d1 := _rng.randi_range(1, 6)
