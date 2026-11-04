@@ -2,26 +2,32 @@ extends Node2D
 
 const MENU_PATH := "res://games/breakout/app/main_menu.tscn"
 const PAUSE_PATH := "res://games/breakout/app/pause_menu.tscn"
+const SCORE_PATH := "user://scores/breakout.txt"
+const SCORE_CAPACITY := 10
 const SERVE_SEED := 1
 
-const BRICK_COLORS: Array[Color] = [
-	Color(0.92, 0.35, 0.35, 1),
-	Color(0.95, 0.55, 0.25, 1),
-	Color(0.95, 0.85, 0.3, 1),
-	Color(0.35, 0.8, 0.45, 1),
-	Color(0.35, 0.55, 0.95, 1),
+const PADDLE_TEX := preload("res://games/breakout/assets/paddle.png")
+const BALL_TEX := preload("res://games/breakout/assets/ball.png")
+const BRICK_TEXES: Array[Texture2D] = [
+	preload("res://games/breakout/assets/brick_0.png"),
+	preload("res://games/breakout/assets/brick_1.png"),
+	preload("res://games/breakout/assets/brick_2.png"),
+	preload("res://games/breakout/assets/brick_3.png"),
+	preload("res://games/breakout/assets/brick_4.png"),
 ]
 
 var _config: BreakoutConfig
 var _sim: BreakoutSim
 var _input: InputState = InputState.new()
+var _audio = NullAudio.new()
 var _accum: float = 0.0
 var _leaving: bool = false
-var _brick_rects: Array[ColorRect] = []
+var _score_saved: bool = false
+var _brick_sprites: Array[Sprite2D] = []
 
 @onready var _background: ColorRect = $Background
-@onready var _paddle: ColorRect = $Paddle
-@onready var _ball: ColorRect = $Ball
+@onready var _paddle: Sprite2D = $Paddle
+@onready var _ball: Sprite2D = $Ball
 @onready var _bricks: Node2D = $Bricks
 @onready var _hud: Label = $Hud/Status
 @onready var _banner_panel: ColorRect = $Hud/BannerPanel
@@ -31,6 +37,7 @@ var _brick_rects: Array[ColorRect] = []
 func _ready() -> void:
 	_config = BreakoutConfig.new()
 	_sim = BreakoutSim.new(_config, SeededRng.new(SERVE_SEED))
+	_audio = _find_audio()
 	_layout()
 	_fit_to_viewport()
 	_sync_view()
@@ -44,8 +51,41 @@ func _physics_process(delta: float) -> void:
 		_accum += delta
 		while _accum >= FixedTick.SEC:
 			_accum -= FixedTick.SEC
-			_sim.step(FixedTick.SEC)
+			_handle_events(_sim.step(FixedTick.SEC))
 	_sync_view()
+
+
+func _handle_events(events: Array) -> void:
+	for item in events:
+		var data := item as Dictionary
+		match str(data.get("type", "")):
+			"brick_broken":
+				_audio.play(&"brick")
+			"life_lost":
+				_audio.play(&"die")
+			"game_over":
+				_persist_score()
+			"cleared":
+				_audio.play(&"clear")
+				_persist_score()
+
+
+func _find_audio():
+	var node: Node = get_parent()
+	while node != null:
+		if node.has_method("get_audio"):
+			return node.call("get_audio")
+		node = node.get_parent()
+	return NullAudio.new()
+
+
+func _persist_score() -> void:
+	if _score_saved:
+		return
+	_score_saved = true
+	var table := ScoreStore.load(SCORE_PATH, SCORE_CAPACITY)
+	if table.insert(_sim.get_score()) >= 0:
+		ScoreStore.save(SCORE_PATH, table)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -72,9 +112,19 @@ func _sample_input() -> void:
 func _layout() -> void:
 	_background.position = Vector2.ZERO
 	_background.size = Vector2(_config.court_width, _config.court_height)
-	_paddle.size = Vector2(_config.paddle_width, _config.paddle_height)
+	_paddle.texture = PADDLE_TEX
+	_paddle.centered = false
+	_paddle.scale = Vector2(
+		_config.paddle_width / float(PADDLE_TEX.get_width()),
+		_config.paddle_height / float(PADDLE_TEX.get_height())
+	)
+	_ball.texture = BALL_TEX
+	_ball.centered = false
 	var diameter := _config.ball_radius * 2.0
-	_ball.size = Vector2(diameter, diameter)
+	_ball.scale = Vector2(
+		diameter / float(BALL_TEX.get_width()),
+		diameter / float(BALL_TEX.get_height())
+	)
 	_hud.position = Vector2(12.0, 8.0)
 	_hud.size = Vector2(_config.court_width - 24.0, 28.0)
 	var panel_size := Vector2(420.0, 140.0)
@@ -86,7 +136,7 @@ func _layout() -> void:
 	_banner_panel.size = panel_size
 	_banner.position = panel_pos
 	_banner.size = panel_size
-	_ensure_brick_rects()
+	_ensure_brick_sprites()
 
 
 func _fit_to_viewport() -> void:
@@ -97,13 +147,13 @@ func _fit_to_viewport() -> void:
 	position = fit["offset"]
 
 
-func _ensure_brick_rects() -> void:
+func _ensure_brick_sprites() -> void:
 	var needed := _config.brick_rows * _config.brick_cols
-	while _brick_rects.size() < needed:
-		var rect := ColorRect.new()
-		rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_bricks.add_child(rect)
-		_brick_rects.append(rect)
+	while _brick_sprites.size() < needed:
+		var sprite := Sprite2D.new()
+		sprite.centered = false
+		_bricks.add_child(sprite)
+		_brick_sprites.append(sprite)
 
 
 func _sync_view() -> void:
@@ -116,14 +166,18 @@ func _sync_view() -> void:
 	for row in _config.brick_rows:
 		for col in _config.brick_cols:
 			var index := row * _config.brick_cols + col
-			var rect: ColorRect = _brick_rects[index]
+			var sprite: Sprite2D = _brick_sprites[index]
 			var alive := _sim.is_brick_alive(row, col)
-			rect.visible = alive
+			sprite.visible = alive
 			if alive:
 				var brick := _sim.brick_rect(row, col)
-				rect.position = brick.position
-				rect.size = brick.size
-				rect.color = BRICK_COLORS[row % BRICK_COLORS.size()]
+				var tex: Texture2D = BRICK_TEXES[row % BRICK_TEXES.size()]
+				sprite.texture = tex
+				sprite.position = brick.position
+				sprite.scale = Vector2(
+					brick.size.x / float(tex.get_width()),
+					brick.size.y / float(tex.get_height())
+				)
 	_hud.text = "Score: %d    Lives: %d" % [_sim.get_score(), _sim.get_lives()]
 	var status := _sim.get_status()
 	var over := status == "game_over" or status == "cleared"

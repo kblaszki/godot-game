@@ -13,7 +13,7 @@ related_docs:
   - engine-scene-stack.md
   - lab-shell.md
 keywords: [layout, inventory, paths, tests]
-last_reviewed: 2026-11-02
+last_reviewed: 2026-11-04
 ---
 
 # Source layout
@@ -56,6 +56,7 @@ Inventory of the lab tree. Update this page when paths are added, removed, or re
 |------|-----|-----|------|-------|
 | pong | `pong_config.gd`, `pong_sim.gd` | host extends LayeredHost + menu/play/pause | `games/pong/docs/` | `pong_sim_test.gd`, `pong_host_flow_test.gd` |
 | snake | `snake_config.gd`, `snake_sim.gd` | host extends LayeredHost + menu/play/pause | `games/snake/docs/` | `snake_sim_test.gd`, `snake_host_flow_test.gd` |
+| breakout | `breakout_config.gd`, `breakout_sim.gd` | host + menu/play/pause + `assets/` | `games/breakout/docs/` | `breakout_sim_test.gd`, `breakout_host_flow_test.gd` |
 
 ## Engine modules
 
@@ -95,3 +96,5 @@ Inventory of the lab tree. Update this page when paths are added, removed, or re
 | `tests/games/pong/pong_host_flow_test.gd` | pause keep-alive |
 | `tests/games/snake/snake_sim_test.gd` | snake rules / determinism |
 | `tests/games/snake/snake_host_flow_test.gd` | snake pause keep-alive |
+| `tests/games/breakout/breakout_sim_test.gd` | bricks / lives / determinism |
+| `tests/games/breakout/breakout_host_flow_test.gd` | breakout pause keep-alive |
