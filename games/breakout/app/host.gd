@@ -8,9 +8,9 @@ var _audio: GodotAudio
 func _boot() -> void:
 	_audio = GodotAudio.new()
 	add_child(_audio)
-	_audio.register_blip(&"brick", 720.0, 0.05)
-	_audio.register_blip(&"die", 180.0, 0.16)
-	_audio.register_blip(&"clear", 980.0, 0.12)
+	_audio.register_blip(&"brick", 880.0, 0.04)
+	_audio.register_blip(&"die", 140.0, 0.2)
+	_audio.register_blip(&"clear", 1200.0, 0.16)
 	submit(SceneRequest.replace(MENU_PATH))
 
 

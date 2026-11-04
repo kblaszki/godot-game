@@ -2,8 +2,8 @@ extends Control
 
 const MENU_PATH := "res://games/breakout/app/main_menu.tscn"
 
-@onready var _resume: Button = $Center/Column/Resume
-@onready var _quit_menu: Button = $Center/Column/QuitToMenu
+@onready var _resume: Button = $Center/Panel/Column/Resume
+@onready var _quit_menu: Button = $Center/Panel/Column/QuitToMenu
 
 
 func _ready() -> void:

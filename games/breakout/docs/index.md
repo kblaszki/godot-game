@@ -15,15 +15,15 @@ related_docs:
   - reference/app.md
   - explanation/flow.md
   - ../../../../docs/index.md
-keywords: [breakout, brick-breaker, index]
+keywords: [breakout, shatter, neon, brick-breaker, index]
 last_reviewed: 2026-11-04
 ---
 
-# Breakout
+# Shatter (Breakout)
 
-Brick-breaker rules in `games/breakout/sim/`. Presentation in `games/breakout/app/` with layered host, pause, high scores, and lab Quit.
+Neon arcade brick-breaker. Rules in `games/breakout/sim/`. Presentation in `games/breakout/app/` as **Shatter**: starfield court, ball trail, shatter bursts, orbit-themed menus.
 
-Pixel placeholders under `games/breakout/assets/` (CC0). Recommended drop-in art: [Brick Breaker Pixel Art by GChoc (CC0)](https://hollowsmilegames.itch.io/brick-breaker).
+Sprites under `games/breakout/assets/` (lab CC0 neon set). Optional pack: [GChoc Brick Breaker (CC0)](https://hollowsmilegames.itch.io/brick-breaker).
 
 ## Reference
 

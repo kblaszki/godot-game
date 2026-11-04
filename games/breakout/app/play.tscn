@@ -5,11 +5,34 @@
 [node name="Play" type="Node2D"]
 script = ExtResource("1_play")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Sky" type="ColorRect" parent="."]
 mouse_filter = 2
-color = Color(0.05, 0.06, 0.09, 1)
+color = Color(0.04, 0.05, 0.12, 1)
+
+[node name="Horizon" type="ColorRect" parent="."]
+mouse_filter = 2
+color = Color(0.08, 0.12, 0.28, 1)
+
+[node name="FloorGlow" type="ColorRect" parent="."]
+mouse_filter = 2
+color = Color(0.05, 0.55, 0.48, 0.18)
+
+[node name="Stars" type="Node2D" parent="."]
 
 [node name="Bricks" type="Node2D" parent="."]
+
+[node name="Fx" type="Node2D" parent="."]
+
+[node name="Trail" type="Line2D" parent="."]
+width = 4.0
+default_color = Color(1, 0.9, 0.45, 0.55)
+joint_mode = 2
+begin_cap_mode = 2
+end_cap_mode = 2
+
+[node name="PaddleGlow" type="ColorRect" parent="."]
+mouse_filter = 2
+color = Color(0.2, 1, 0.85, 0.22)
 
 [node name="Paddle" type="Sprite2D" parent="."]
 centered = false
@@ -19,20 +42,37 @@ centered = false
 
 [node name="Hud" type="Node2D" parent="."]
 
-[node name="Status" type="Label" parent="Hud"]
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 18
-text = "Score: 0    Lives: 3"
+[node name="Score" type="Label" parent="Hud"]
+theme_override_colors/font_color = Color(0.75, 1, 0.95, 1)
+theme_override_font_sizes/font_size = 22
+text = "0"
+
+[node name="ScoreHint" type="Label" parent="Hud"]
+theme_override_colors/font_color = Color(0.45, 0.7, 0.75, 1)
+theme_override_font_sizes/font_size = 12
+text = "SCORE"
+
+[node name="Lives" type="Node2D" parent="Hud"]
+
+[node name="BannerDim" type="ColorRect" parent="Hud"]
+visible = false
+mouse_filter = 2
+color = Color(0.02, 0.03, 0.08, 0.72)
 
 [node name="BannerPanel" type="ColorRect" parent="Hud"]
 visible = false
 mouse_filter = 2
-color = Color(0.08, 0.09, 0.12, 0.92)
+color = Color(0.07, 0.12, 0.22, 0.94)
+
+[node name="BannerAccent" type="ColorRect" parent="Hud"]
+visible = false
+mouse_filter = 2
+color = Color(0.25, 1, 0.82, 1)
 
 [node name="Banner" type="Label" parent="Hud"]
 visible = false
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(0.92, 0.98, 1, 1)
+theme_override_font_sizes/font_size = 26
 horizontal_alignment = 1
 vertical_alignment = 1
-text = "Cleared!"
+text = "CLEAR"

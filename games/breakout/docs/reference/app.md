@@ -31,16 +31,16 @@ last_reviewed: 2026-11-04
 
 # Breakout app
 
-Entry: `games/breakout/app/host.tscn` (extends `LayeredHost`). Nested under the lab; Quit returns via `return_to_launcher`. Host owns `GodotAudio` (`brick` / `die` / `clear`) and exposes `get_audio()`.
+Branded in UI as **Shatter**. Entry: `games/breakout/app/host.tscn` (extends `LayeredHost`). Nested under the lab; Quit returns via `return_to_launcher`. Host owns `GodotAudio` (`brick` / `die` / `clear`) and exposes `get_audio()`.
 
 | Scene | Role |
 |-------|------|
-| `main_menu` | Start → play; Quit → lab; Best from `user://scores/breakout.txt` |
-| `play` | Steps `BreakoutSim`, draws sprites from `assets/`, `ViewFit` scales court; persists score on clear/game over |
-| `pause_menu` | Resume `POP`; Quit to menu `POP`+`REPLACE` |
+| `main_menu` | Neon title screen with drifting brick decor; Launch → play; Best from `user://scores/breakout.txt` |
+| `play` | Starfield + horizon glow, ball trail, shatter bursts, screen shake, life orbs; `ViewFit`; score persist on clear/game over |
+| `pause_menu` | Dim overlay + HOLD panel; Resume `POP`; Abort `POP`+`REPLACE` |
 
-InputMap: `breakout_move_left/right`, `breakout_pause`.
+InputMap: `breakout_move_left/right`, `breakout_pause`. Lab launcher label: **Shatter**.
 
 ## Assets
 
-`games/breakout/assets/` holds lab CC0 pixel placeholders (`paddle.png`, `ball.png`, `brick_0..4.png`). Swap with [GChoc Brick Breaker (CC0)](https://hollowsmilegames.itch.io/brick-breaker) if desired; keep the same filenames or update preloads in `play.gd`.
+`games/breakout/assets/` neon CC0 set (`paddle.png`, `ball.png`, `life.png`, `brick_0..4.png`). Optional swap: [GChoc Brick Breaker (CC0)](https://hollowsmilegames.itch.io/brick-breaker).

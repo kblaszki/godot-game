@@ -1,3 +1,2 @@
-Lab-authored pixel placeholders for Breakout (CC0).
-Optional replacement pack: Brick Breaker Pixel Art by GChoc (CC0)
-https://hollowsmilegames.itch.io/brick-breaker
+Lab-authored neon arcade sprites for Breakout (CC0).
+Optional art pack: https://hollowsmilegames.itch.io/brick-breaker (GChoc, CC0)

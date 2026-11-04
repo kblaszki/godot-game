@@ -19,7 +19,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 0
-color = Color(0, 0, 0, 0.55)
+color = Color(0.02, 0.04, 0.1, 0.7)
 
 [node name="Center" type="CenterContainer" parent="."]
 layout_mode = 1
@@ -29,23 +29,40 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Column" type="VBoxContainer" parent="Center"]
+[node name="Panel" type="ColorRect" parent="Center"]
+custom_minimum_size = Vector2(320, 240)
 layout_mode = 2
-theme_override_constants/separation = 16
+color = Color(0.06, 0.1, 0.18, 0.95)
 
-[node name="Title" type="Label" parent="Center/Column"]
+[node name="Column" type="VBoxContainer" parent="Center/Panel"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 28.0
+offset_top = 24.0
+offset_right = -28.0
+offset_bottom = -24.0
+theme_override_constants/separation = 14
+
+[node name="Accent" type="ColorRect" parent="Center/Panel/Column"]
+custom_minimum_size = Vector2(0, 4)
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 36
-text = "Paused"
+color = Color(0.3, 1, 0.82, 1)
+
+[node name="Title" type="Label" parent="Center/Panel/Column"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.92, 0.98, 1, 1)
+theme_override_font_sizes/font_size = 32
+text = "HOLD"
 horizontal_alignment = 1
 
-[node name="Resume" type="Button" parent="Center/Column"]
-custom_minimum_size = Vector2(220, 44)
+[node name="Resume" type="Button" parent="Center/Panel/Column"]
+custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
-text = "Resume"
+text = "Resume orbit"
 
-[node name="QuitToMenu" type="Button" parent="Center/Column"]
-custom_minimum_size = Vector2(220, 44)
+[node name="QuitToMenu" type="Button" parent="Center/Panel/Column"]
+custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
-text = "Quit to menu"
+text = "Abort to menu"
