@@ -10,9 +10,11 @@ const EDGE_W := 80.0
 const EDGE_H := 112.0
 const CORNER := 112.0
 const TILE_HALF := Vector2(64.0, 64.0)
-const FOLLOW_POS_RATE := 2.2
-const FOLLOW_ROT_RATE := 2.0
-const ORBIT_SENS := 0.009
+const FOLLOW_POS_RATE := 1.7
+const FOLLOW_ROT_RATE := 1.5
+const ORBIT_SENS := 0.012
+## How far the camera leans from board center toward the active space (0–1).
+const FOLLOW_LEAN := 0.32
 ## Diamond presentation: square track rotated so a corner points down.
 const REST_PIVOT_ROT := -PI * 0.25
 
@@ -177,17 +179,7 @@ func _style_button(btn: Button, color: Color, emphasize: bool) -> void:
 func _process(delta: float) -> void:
 	_pulse += delta
 	_highlight_current_tile()
-	if _follow_t > 0.0:
-		_follow_t = maxf(0.0, _follow_t - delta)
-		var pos_t := 1.0 - exp(-FOLLOW_POS_RATE * delta)
-		_camera.position = _camera.position.lerp(_follow_target, pos_t)
-		if _auto_orient:
-			var rot_t := 1.0 - exp(-FOLLOW_ROT_RATE * delta)
-			_pivot.rotation = lerp_angle(_pivot.rotation, _follow_rot_target, rot_t)
-			# Keep camera target locked to the followed tile in world space while the table turns.
-			if _follow_space_valid():
-				_follow_target = _tile_world_pos(_follow_space_index)
-				_camera.position = _camera.position.lerp(_follow_target, pos_t)
+	_update_camera(delta)
 	if _busy or _sim.get_phase() == DistrictSim.PHASE_OVER:
 		return
 	var player := _sim.get_player(_sim.get_current_player())
@@ -202,6 +194,35 @@ func _process(delta: float) -> void:
 
 func _follow_space_valid() -> bool:
 	return _follow_space_index >= 0 and _follow_space_index < _tile_centers.size()
+
+
+func _board_center() -> Vector2:
+	return _pivot.position
+
+
+func _framing_target() -> Vector2:
+	## Mostly stay on the table center; lean slightly toward the active space.
+	if not _follow_space_valid():
+		return _board_center()
+	return _board_center().lerp(_tile_world_pos(_follow_space_index), FOLLOW_LEAN)
+
+
+func _update_camera(delta: float) -> void:
+	if _orbiting or _panning:
+		return
+	if _follow_t <= 0.0 and not (_auto_orient and _busy and _follow_space_valid()):
+		return
+	if _follow_t > 0.0:
+		_follow_t = maxf(0.0, _follow_t - delta)
+	_follow_target = _framing_target()
+	var pos_t := 1.0 - exp(-FOLLOW_POS_RATE * delta)
+	_camera.position = _camera.position.lerp(_follow_target, pos_t)
+	if _auto_orient:
+		var rot_t := 1.0 - exp(-FOLLOW_ROT_RATE * delta)
+		_pivot.rotation = lerp_angle(_pivot.rotation, _follow_rot_target, rot_t)
+		# Recompute lean after the table turns so framing stays stable.
+		_follow_target = _framing_target()
+		_camera.position = _camera.position.lerp(_follow_target, pos_t)
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -226,26 +247,34 @@ func _on_board_gui_input(event: InputEvent) -> void:
 			if mb.pressed:
 				_follow_t = 0.0
 				_auto_orient = false
+			else:
+				# After orbit, ease camera back to table center.
+				_follow_space_index = -1
+				_follow_target = _board_center()
+				_follow_t = 0.6
 			_svc.accept_event()
-		elif mb.button_index == MOUSE_BUTTON_MIDDLE:
+		elif mb.button_index == MOUSE_BUTTON_MIDDLE or mb.button_index == MOUSE_BUTTON_RIGHT:
 			_panning = mb.pressed
 			_orbiting = false
 			_drag_last = mb.position
 			if mb.pressed:
 				_follow_t = 0.0
+				_auto_orient = false
 			_svc.accept_event()
 		elif mb.pressed and mb.button_index == MOUSE_BUTTON_WHEEL_UP:
-			_zoom_at(mb.position, 1.12)
+			_zoom_at(mb.position, 1.1)
 			_svc.accept_event()
 		elif mb.pressed and mb.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			_zoom_at(mb.position, 1.0 / 1.12)
+			_zoom_at(mb.position, 1.0 / 1.1)
 			_svc.accept_event()
 	elif event is InputEventMouseMotion:
 		var mm := event as InputEventMouseMotion
 		var delta := mm.position - _drag_last
 		_drag_last = mm.position
 		if _orbiting:
+			# Spin the table in place; keep the camera on the board center.
 			_pivot.rotation += delta.x * ORBIT_SENS
+			_camera.position = _board_center()
 			_svc.accept_event()
 		elif _panning:
 			_camera.position -= delta / _camera.zoom.x
@@ -262,6 +291,7 @@ func _zoom_at(screen_pos: Vector2, factor: float) -> void:
 	_camera.zoom = Vector2(new_zoom, new_zoom)
 	_camera.position = world_under - local / new_zoom
 	_follow_t = 0.0
+	_auto_orient = false
 
 
 func _view_size() -> Vector2:
@@ -271,24 +301,40 @@ func _view_size() -> Vector2:
 	return sz
 
 
+func _fit_zoom_for_pivot(pivot_rot: float) -> float:
+	## World AABB of the board under the given pivot rotation, then fit in the viewport.
+	var view := _view_size()
+	var pad := PAD
+	var corners: Array[Vector2] = [
+		Vector2(_board_rect.position.x - pad, _board_rect.position.y - pad),
+		Vector2(_board_rect.end.x + pad, _board_rect.position.y - pad),
+		Vector2(_board_rect.end.x + pad, _board_rect.end.y + pad),
+		Vector2(_board_rect.position.x - pad, _board_rect.end.y + pad),
+	]
+	var min_p := Vector2(INF, INF)
+	var max_p := Vector2(-INF, -INF)
+	for c in corners:
+		var w := _pivot.position + c.rotated(pivot_rot)
+		min_p = min_p.min(w)
+		max_p = max_p.max(w)
+	var size := (max_p - min_p).max(Vector2(1, 1))
+	return clampf(minf(view.x / size.x, view.y / size.y), ZOOM_MIN, ZOOM_MAX)
+
+
 func _fit_camera() -> void:
 	if _board_rect.size.x <= 1.0:
 		return
-	var view := _view_size()
-	# Axis-aligned local rect grows; diamond view needs diagonal extent.
-	var local_target := _board_rect.grow(PAD)
-	var diag := local_target.size.length()
-	var z := clampf(minf(view.x / diag, view.y / diag) * 1.15, ZOOM_MIN, ZOOM_MAX)
+	var z := _fit_zoom_for_pivot(REST_PIVOT_ROT)
 	_auto_orient = true
 	_follow_rot_target = REST_PIVOT_ROT
 	_follow_space_index = -1
 	_follow_t = 0.0
 	_camera.rotation = 0.0
-	var world_center := _pivot.position
+	var world_center := _board_center()
 	var tw := create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
-	tw.tween_property(_camera, "zoom", Vector2(z, z), 0.5)
-	tw.parallel().tween_property(_camera, "position", world_center, 0.5)
-	tw.parallel().tween_property(_pivot, "rotation", REST_PIVOT_ROT, 0.5)
+	tw.tween_property(_camera, "zoom", Vector2(z, z), 0.55)
+	tw.parallel().tween_property(_camera, "position", world_center, 0.55)
+	tw.parallel().tween_property(_pivot, "rotation", REST_PIVOT_ROT, 0.55)
 
 
 func _on_roll() -> void:
@@ -445,10 +491,10 @@ func _set_follow_space(space_i: int) -> void:
 	if space_i < 0 or space_i >= _tile_centers.size():
 		return
 	_follow_space_index = space_i
-	_follow_target = _tile_world_pos(space_i)
-	# Spin the table so this edge's labels read upright (band outward, text inward).
-	_follow_rot_target = REST_PIVOT_ROT - _space_tile_rotation(space_i)
-	_follow_t = 1.0
+	# Put this side at the bottom of the diamond view (readable band-outward layout).
+	_follow_rot_target = REST_PIVOT_ROT - float(_space_side(space_i)) * (PI * 0.5)
+	_follow_target = _framing_target()
+	_follow_t = 1.2
 	_auto_orient = true
 
 

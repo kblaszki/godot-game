@@ -18,6 +18,7 @@ related_docs:
   - ../../../../docs/reference/lab-shell.md
 keywords: [districts, app, isometric, hotseat, tween, tile baker]
 last_reviewed: 2026-11-05
+
 ---
 
 # Districts app
@@ -42,7 +43,7 @@ Play lays a **square track** (corners + abutting edge rectangles), rotates `Boar
 
 ## Camera
 
-Board lives in a `SubViewport` with `transparent_bg` (UI felt/frame show through). **`BoardPivot`** holds table + tiles + pawns. **LMB drag** orbits the table around its center; **MMB** pans the camera; wheel zooms. **Fit board** eases zoom/camera to the ring and resets pivot rotation (~0.5s). During hops the camera slowly follows the active tile while the pivot eases so that edge sits upright.
+Board lives in a `SubViewport` with `transparent_bg`. **`BoardPivot`** holds table + tiles + pawns. **LMB drag** spins the table in place (camera stays on board center). **MMB/RMB** pan; wheel zooms toward cursor. **Fit board** computes zoom from the rotated board AABB and eases pivot back to the diamond rest angle. During hops the pivot eases so the active edge sits at the bottom; the camera only *leans* toward that space (`FOLLOW_LEAN`), it does not lock onto the meeple.
 
 ## Juice
 
