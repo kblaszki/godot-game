@@ -5,19 +5,20 @@ audience: [ai, human]
 related_code:
   - games/districts/sim/
   - games/districts/app/
+  - games/districts/assets/
   - tests/games/districts/
 related_docs:
   - reference/sim.md
   - reference/app.md
   - explanation/flow.md
   - ../../../../docs/index.md
-keywords: [districts, board, property, bots, hotseat, index]
-last_reviewed: 2026-11-04
+keywords: [districts, board, property, bots, hotseat, camera, index]
+last_reviewed: 2026-11-05
 ---
 
 # Districts
 
-Original property-circuit board game (genre inspiration only — not Monopoly IP). Headless rules in `sim/`; shared isometric 2.5D table in `app/`. Local hotseat 2–4 seats with optional bots.
+Original property-circuit board game (genre inspiration only — not Monopoly IP). Headless rules in `sim/`; shared isometric tabletop in `app/` with SubViewport camera (fit/pan/zoom), Kenney meeples/dice, and lab iso tiles.
 
 ## Reference
 

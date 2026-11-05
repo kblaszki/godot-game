@@ -15,7 +15,7 @@ related_docs:
   - ../explanation/flow.md
   - ../../../../docs/reference/lab-shell.md
 keywords: [districts, app, isometric, hotseat]
-last_reviewed: 2026-11-04
+last_reviewed: 2026-11-05
 ---
 
 # Districts app
@@ -23,7 +23,15 @@ last_reviewed: 2026-11-04
 | Scene | Role |
 |-------|------|
 | `setup` | 2–4 seats, bot toggles (seat 1 human), Start / Back |
-| `play` | Shared iso diamond ring, all pawns, roster, event log, Roll/Buy/Skip; bots auto via `bot_act` |
+| `play` | Felt table + SubViewport `Camera2D` (fit / pan / zoom), iso tile sprites, Kenney meeples & dice overlay, roster/log, Fit/Roll/Buy/Skip; bots via `bot_act` |
 | `pause_menu` | Resume or return to setup |
 
 Host stores `match_players`, `match_bot_mask`, `match_seed` for play. Esc opens pause. Game over → Enter returns to setup.
+
+## Camera
+
+Board lives in a `SubViewport`. **Fit board** frames the full ring. Drag pans; mouse wheel zooms. Soft follow after `moved`.
+
+## Assets
+
+`games/districts/assets/` — Kenney Boardgame Pack meeples/dice (CC0) + lab iso tiles (`tiles/`). See `assets/LICENSE.txt`.

@@ -1,0 +1,9 @@
+Districts art credits
+
+Kenney Boardgame Pack (CC0 1.0)
+- Source: https://opengameart.org/content/boardgame-pack
+- Also: https://www.kenney.nl/assets/boardgame-pack
+- Used: meeple pieces (red/blue/green/yellow), white dice faces
+- Attribution optional: "Kenney.nl"
+
+Lab-authored isometric tiles and felt texture under tiles/ (CC0).
