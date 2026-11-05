@@ -18,14 +18,14 @@ last_reviewed: 2026-11-05
 
 # Districts
 
-Original property-circuit board game (genre inspiration only — not Monopoly IP). Headless rules in `sim/`; isometric tabletop in `app/` with SubViewport camera, procedural labeled tiles (`DistrictTileBaker`), Kenney meeples/dice, and felt.
+Original property-circuit board game (genre inspiration only — not Monopoly IP). Headless rules in `sim/`; 3D table in `app/` (`Board3D` in a SubViewport, corner HUD, procedural tiles from `DistrictTileBaker`, Kenney meeples/dice).
 
 ## Reference
 
 | Doc | Purpose |
 |-----|---------|
 | [sim.md](reference/sim.md) | 32-space board, phases, chance, gadgets, auction, trade, net stubs |
-| [app.md](reference/app.md) | Setup, play HUD, iso board |
+| [app.md](reference/app.md) | Setup, 3D board, corner HUD |
 
 ## Explanation
 

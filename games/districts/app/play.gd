@@ -2,81 +2,63 @@ extends Control
 
 const SETUP_PATH := "res://games/districts/app/setup.tscn"
 const PAUSE_PATH := "res://games/districts/app/pause_menu.tscn"
-const ZOOM_MIN := 0.35
-const ZOOM_MAX := 2.4
-const PAD := 96.0
-const STEP_SEC := 0.22
-const EDGE_W := 80.0
-const EDGE_H := 112.0
-const CORNER := 112.0
-const TILE_HALF := Vector2(64.0, 64.0)
-const FOLLOW_POS_RATE := 1.7
-const FOLLOW_ROT_RATE := 1.5
-const ORBIT_SENS := 0.012
-## How far the camera leans from board center toward the active space (0–1).
-const FOLLOW_LEAN := 0.32
-## Diamond presentation: square track rotated so a corner points down.
-const REST_PIVOT_ROT := -PI * 0.25
+const STEP_SEC := 0.18
 
-const MEEPLE_PATHS: Array[String] = [
-	"res://games/districts/assets/kenney_boardgame/pieces/meeple_red.png",
-	"res://games/districts/assets/kenney_boardgame/pieces/meeple_blue.png",
-	"res://games/districts/assets/kenney_boardgame/pieces/meeple_green.png",
-	"res://games/districts/assets/kenney_boardgame/pieces/meeple_yellow.png",
-]
-const PAWN_COLORS: Array[Color] = [
-	Color(0.95, 0.45, 0.4, 1),
-	Color(0.4, 0.75, 1.0, 1),
-	Color(0.45, 0.9, 0.55, 1),
-	Color(0.95, 0.8, 0.35, 1),
-]
+const GADGET_NAMES := {
+	GadgetRules.SHIELD: "Shield",
+	GadgetRules.DOUBLE_RENT: "x2 Rent",
+	GadgetRules.REROLL: "Reroll",
+	GadgetRules.STEAL_CASH: "Steal",
+	GadgetRules.FREEZE: "Freeze",
+}
 
 var _sim: DistrictSim
-var _tile_sprites: Array[Sprite2D] = []
-var _pawn_nodes: Array[Sprite2D] = []
-var _tile_centers: Array[Vector2] = []
-var _board_rect: Rect2 = Rect2()
-var _log_lines: PackedStringArray = PackedStringArray()
-var _bot_cooldown: float = 0.0
-var _pulse: float = 0.0
-var _panning: bool = false
-var _orbiting: bool = false
-var _drag_last: Vector2 = Vector2.ZERO
-var _follow_t: float = 0.0
-var _follow_target: Vector2 = Vector2.ZERO
-var _follow_rot_target: float = 0.0
-var _auto_orient: bool = true
+var _cards: Array[PanelContainer] = []
+var _card_styles: Array[StyleBoxFlat] = []
 var _busy: bool = false
-var _cash_cache: Array[int] = []
 var _banner_shown: bool = false
-var _owner_pips: Array[Polygon2D] = []
-var _follow_space_index: int = -1
+var _pulse: float = 0.0
+var _bot_cooldown: float = 0.35
+var _chance_arm: float = -1.0
+var _tour_ready: bool = false
+var _build_key: String = ""
+var _drag_last: Vector2 = Vector2.ZERO
+var _orbiting: bool = false
+var _panning: bool = false
 
-@onready var _board_root: Control = $BoardRoot
-@onready var _felt: TextureRect = $BoardRoot/Felt
+@onready var _viewport: SubViewport = $BoardRoot/SubViewportContainer/SubViewport
 @onready var _svc: SubViewportContainer = $BoardRoot/SubViewportContainer
-@onready var _pivot: Node2D = $BoardRoot/SubViewportContainer/SubViewport/World/BoardPivot
-@onready var _table_felt: Sprite2D = $BoardRoot/SubViewportContainer/SubViewport/World/BoardPivot/TableFelt
-@onready var _table_plate: Polygon2D = $BoardRoot/SubViewportContainer/SubViewport/World/BoardPivot/TablePlate
-@onready var _board: Node2D = $BoardRoot/SubViewportContainer/SubViewport/World/BoardPivot/Board
-@onready var _fx: Node2D = $BoardRoot/SubViewportContainer/SubViewport/World/BoardPivot/Fx
-@onready var _pawns: Node2D = $BoardRoot/SubViewportContainer/SubViewport/World/BoardPivot/Pawns
-@onready var _camera: Camera2D = $BoardRoot/SubViewportContainer/SubViewport/Camera2D
-@onready var _space_chip: PanelContainer = $BoardRoot/SpaceChip
-@onready var _space_chip_label: Label = $BoardRoot/SpaceChip/SpaceChipLabel
-@onready var _dice_overlay: HBoxContainer = $BoardRoot/DiceOverlay
-@onready var _die_a: TextureRect = $BoardRoot/DiceOverlay/DieA
-@onready var _die_b: TextureRect = $BoardRoot/DiceOverlay/DieB
-@onready var _toast_layer: Control = $BoardRoot/ToastLayer
-@onready var _hud_panel: PanelContainer = $Hud/Panel
-@onready var _roster: VBoxContainer = $Hud/Panel/Margin/Column/Roster
-@onready var _log: RichTextLabel = $Hud/Panel/Margin/Column/Log
-@onready var _turn: Label = $Hud/Panel/Margin/Column/Header/Turn
-@onready var _offer: Label = $Hud/Panel/Margin/Column/Header/Offer
-@onready var _fit_btn: Button = $Hud/Panel/Margin/Column/Actions/Fit
-@onready var _roll: Button = $Hud/Panel/Margin/Column/Actions/Roll
-@onready var _buy: Button = $Hud/Panel/Margin/Column/Actions/BuyRow/Buy
-@onready var _skip: Button = $Hud/Panel/Margin/Column/Actions/BuyRow/Skip
+@onready var _board: Board3D = $BoardRoot/SubViewportContainer/SubViewport/Board3D
+@onready var _audio: DistrictAudio = $DistrictAudio
+@onready var _feed: Label = $BottomBar/BarMargin/BarRow/Feed
+@onready var _gadgets: HBoxContainer = $BottomBar/BarMargin/BarRow/Gadgets
+@onready var _menu: Button = $BottomBar/BarMargin/BarRow/Menu
+@onready var _dock: PanelContainer = $DockAnchor/ActionDock
+@onready var _status: Label = $DockAnchor/ActionDock/Margin/Column/Status
+@onready var _offer: Label = $DockAnchor/ActionDock/Margin/Column/Offer
+@onready var _fit_btn: Button = $DockAnchor/ActionDock/Margin/Column/MainRow/Fit
+@onready var _roll: Button = $DockAnchor/ActionDock/Margin/Column/MainRow/Roll
+@onready var _buy: Button = $DockAnchor/ActionDock/Margin/Column/MainRow/Buy
+@onready var _skip: Button = $DockAnchor/ActionDock/Margin/Column/MainRow/Skip
+@onready var _done: Button = $DockAnchor/ActionDock/Margin/Column/MainRow/Done
+@onready var _build_row: HBoxContainer = $DockAnchor/ActionDock/Margin/Column/BuildRow
+@onready var _build_pick: OptionButton = $DockAnchor/ActionDock/Margin/Column/BuildRow/BuildPick
+@onready var _build_btn: Button = $DockAnchor/ActionDock/Margin/Column/BuildRow/Build
+@onready var _tour_row: HBoxContainer = $DockAnchor/ActionDock/Margin/Column/TourRow
+@onready var _tour_pick: OptionButton = $DockAnchor/ActionDock/Margin/Column/TourRow/TourPick
+@onready var _tour_go: Button = $DockAnchor/ActionDock/Margin/Column/TourRow/TourGo
+@onready var _extra_row: HBoxContainer = $DockAnchor/ActionDock/Margin/Column/ExtraRow
+@onready var _arena_btn: Button = $DockAnchor/ActionDock/Margin/Column/ExtraRow/Arena
+@onready var _chance_btn: Button = $DockAnchor/ActionDock/Margin/Column/ExtraRow/Chance
+@onready var _auction_row: HBoxContainer = $DockAnchor/ActionDock/Margin/Column/AuctionRow
+@onready var _bid: Button = $DockAnchor/ActionDock/Margin/Column/AuctionRow/Bid
+@onready var _auction_pass: Button = $DockAnchor/ActionDock/Margin/Column/AuctionRow/AuctionPass
+@onready var _roll_sum: Label = $RollSum
+@onready var _dice_overlay: HBoxContainer = $DiceOverlay
+@onready var _die_a: TextureRect = $DiceOverlay/DieA
+@onready var _die_b: TextureRect = $DiceOverlay/DieB
+@onready var _chance_card: PanelContainer = $ChanceCard
+@onready var _chance_label: Label = $ChanceCard/ChanceLabel
 @onready var _banner: PanelContainer = $Banner
 @onready var _banner_label: Label = $Banner/BannerLabel
 
@@ -90,49 +72,116 @@ func _ready() -> void:
 		players = int(host.get("match_players"))
 		bot_mask = int(host.get("match_bot_mask"))
 		seed_value = int(host.get("match_seed"))
-	_sim = DistrictSim.new(DistrictConfig.new(), SeededRng.new(seed_value))
+	var config := DistrictConfig.new()
+	config.table_stake = _read_stake(host)
+	config.apply_stake()
+	_sim = DistrictSim.new(config, SeededRng.new(seed_value))
 	_sim.setup(players, bot_mask, seed_value)
-	_cash_cache.clear()
-	for i in _sim.get_player_count():
-		_cash_cache.append(_sim.get_player(i).cash)
-	_felt.texture = load("res://games/districts/assets/tiles/felt.png")
-	_felt.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	if OS.has_feature("headless") or DisplayServer.get_name() == "headless":
+		_viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
+	_bind_cards()
 	_apply_styles()
+	_connect_buttons()
+	_build_gadget_buttons()
+	_board.setup_match(_sim)
+	_svc.gui_input.connect(_on_board_gui_input)
+	_svc.resized.connect(_on_view_resized)
+	_push_log("Table set. Claim the ring.")
+	_refresh_hud()
+	await get_tree().process_frame
+	if not is_inside_tree():
+		return
+	_board.fit(_view_size())
+
+
+func _process(delta: float) -> void:
+	if _sim == null:
+		return
+	_pulse += delta
+	if not _busy:
+		var shown := _sim.get_player(_sim.get_current_player())
+		_board.highlight_space(shown.position, 0.5 + 0.5 * sin(_pulse * 3.5))
+	if _busy or _sim.get_phase() == DistrictSim.PHASE_OVER:
+		return
+	var player := _sim.get_player(_sim.get_current_player())
+	if player.is_bot and not player.bankrupt:
+		_bot_cooldown -= delta
+		if _bot_cooldown > 0.0:
+			return
+		_bot_cooldown = 0.4
+		_run_action(func() -> Array: return _sim.bot_act())
+		return
+	if _sim.get_phase() == DistrictSim.PHASE_CHANCE and not player.is_bot:
+		if _chance_arm < 0.0:
+			_chance_arm = 0.35
+		else:
+			_chance_arm -= delta
+			if _chance_arm <= 0.0:
+				_chance_arm = -1.0
+				_run_action(func() -> Array: return _sim.resolve_chance())
+	elif _sim.get_phase() != DistrictSim.PHASE_CHANCE:
+		_chance_arm = -1.0
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event.is_action_pressed("ui_cancel"):
+		_submit(SceneRequest.push(PAUSE_PATH))
+		get_viewport().set_input_as_handled()
+	elif not _busy and _sim != null and _sim.get_phase() == DistrictSim.PHASE_OVER and event.is_action_pressed("ui_accept"):
+		_submit(SceneRequest.replace(SETUP_PATH))
+		get_viewport().set_input_as_handled()
+
+
+func _bind_cards() -> void:
+	_cards.clear()
+	_cards.append($P0)
+	_cards.append($P1)
+	_cards.append($P2)
+	_cards.append($P3)
+
+
+func _connect_buttons() -> void:
+	_menu.pressed.connect(_on_menu)
+	_fit_btn.pressed.connect(_on_fit)
 	_roll.pressed.connect(_on_roll)
 	_buy.pressed.connect(_on_buy)
 	_skip.pressed.connect(_on_skip)
-	_fit_btn.pressed.connect(_fit_camera)
-	_board_root.resized.connect(_fit_camera)
-	_svc.gui_input.connect(_on_board_gui_input)
-	_build_board()
-	_build_pawns()
-	_camera.make_current()
-	await get_tree().process_frame
-	_fit_camera()
-	_refresh_hud()
-	_push_log("[color=#7dcea0]Table set. Claim the ring.[/color]")
+	_done.pressed.connect(_on_done)
+	_build_btn.pressed.connect(_on_build)
+	_tour_go.pressed.connect(_on_tour)
+	_arena_btn.pressed.connect(_on_arena)
+	_chance_btn.pressed.connect(_on_chance)
+	_bid.pressed.connect(_on_bid)
+	_auction_pass.pressed.connect(_on_auction_pass)
+
+
+func _build_gadget_buttons() -> void:
+	for id in GadgetRules.ALL:
+		var button := Button.new()
+		button.text = str(GADGET_NAMES.get(id, id))
+		button.set_meta("gadget_id", id)
+		button.pressed.connect(_on_gadget.bind(id))
+		button.custom_minimum_size = Vector2(0, 36)
+		_style_button(button, Color(0.2, 0.24, 0.32, 1), false)
+		_gadgets.add_child(button)
 
 
 func _apply_styles() -> void:
-	var panel := StyleBoxFlat.new()
-	panel.bg_color = Color(0.08, 0.1, 0.14, 0.96)
-	panel.set_border_width_all(1)
-	panel.border_color = Color(1, 1, 1, 0.08)
-	panel.set_corner_radius_all(14)
-	panel.content_margin_left = 0
-	panel.content_margin_right = 0
-	_hud_panel.add_theme_stylebox_override("panel", panel)
+	var dock := StyleBoxFlat.new()
+	dock.bg_color = Color(0.07, 0.09, 0.13, 0.9)
+	dock.set_corner_radius_all(14)
+	dock.set_border_width_all(1)
+	dock.border_color = Color(1, 1, 1, 0.08)
+	dock.content_margin_left = 0
+	dock.content_margin_right = 0
+	dock.content_margin_top = 0
+	dock.content_margin_bottom = 0
+	_dock.add_theme_stylebox_override("panel", dock)
 
-	var chip := StyleBoxFlat.new()
-	chip.bg_color = Color(0.06, 0.09, 0.12, 0.88)
-	chip.set_border_width_all(1)
-	chip.border_color = Color(0.35, 0.85, 0.65, 0.55)
-	chip.set_corner_radius_all(10)
-	chip.content_margin_left = 12
-	chip.content_margin_right = 12
-	chip.content_margin_top = 6
-	chip.content_margin_bottom = 6
-	_space_chip.add_theme_stylebox_override("panel", chip)
+	var bar := dock.duplicate() as StyleBoxFlat
+	bar.set_corner_radius_all(0)
+	bar.bg_color = Color(0.06, 0.08, 0.11, 0.92)
+	($BottomBar as PanelContainer).add_theme_stylebox_override("panel", bar)
 
 	var banner := StyleBoxFlat.new()
 	banner.bg_color = Color(0.07, 0.09, 0.12, 0.94)
@@ -145,10 +194,45 @@ func _apply_styles() -> void:
 	banner.content_margin_bottom = 16
 	_banner.add_theme_stylebox_override("panel", banner)
 
-	_style_button(_fit_btn, Color(0.18, 0.22, 0.28, 1), false)
+	var chance := StyleBoxFlat.new()
+	chance.bg_color = Color(0.1, 0.14, 0.22, 0.96)
+	chance.set_border_width_all(2)
+	chance.border_color = Color(0.95, 0.82, 0.4, 0.9)
+	chance.set_corner_radius_all(16)
+	chance.content_margin_left = 18
+	chance.content_margin_right = 18
+	chance.content_margin_top = 16
+	chance.content_margin_bottom = 16
+	_chance_card.add_theme_stylebox_override("panel", chance)
+
+	_roll_sum.add_theme_font_size_override("font_size", 72)
+	_roll_sum.add_theme_color_override("font_color", Color(1, 0.96, 0.82, 1))
+	_roll_sum.add_theme_constant_override("outline_size", 10)
+	_roll_sum.add_theme_color_override("font_outline_color", Color(0.08, 0.12, 0.16, 0.85))
+
+	for button in [_fit_btn, _skip, _auction_pass, _menu, _chance_btn]:
+		_style_button(button, Color(0.2, 0.24, 0.3, 1), false)
 	_style_button(_roll, Color(0.18, 0.55, 0.42, 1), true)
 	_style_button(_buy, Color(0.55, 0.42, 0.15, 1), true)
-	_style_button(_skip, Color(0.22, 0.25, 0.32, 1), false)
+	_style_button(_done, Color(0.18, 0.45, 0.62, 1), true)
+	_style_button(_build_btn, Color(0.45, 0.32, 0.62, 1), true)
+	_style_button(_tour_go, Color(0.2, 0.45, 0.62, 1), true)
+	_style_button(_arena_btn, Color(0.62, 0.28, 0.24, 1), true)
+	_style_button(_bid, Color(0.55, 0.42, 0.15, 1), true)
+
+	_card_styles.clear()
+	for card in _cards:
+		var style := StyleBoxFlat.new()
+		style.bg_color = Color(0.08, 0.1, 0.14, 0.9)
+		style.set_corner_radius_all(12)
+		style.content_margin_left = 10
+		style.content_margin_right = 12
+		style.content_margin_top = 8
+		style.content_margin_bottom = 8
+		style.set_border_width_all(1)
+		style.border_color = Color(1, 1, 1, 0.08)
+		card.add_theme_stylebox_override("panel", style)
+		_card_styles.append(style)
 
 
 func _style_button(btn: Button, color: Color, emphasize: bool) -> void:
@@ -162,11 +246,11 @@ func _style_button(btn: Button, color: Color, emphasize: bool) -> void:
 	if emphasize:
 		normal.set_border_width_all(1)
 		normal.border_color = Color(1, 1, 1, 0.18)
-	var hover := normal.duplicate()
+	var hover := normal.duplicate() as StyleBoxFlat
 	hover.bg_color = color.lightened(0.12)
-	var pressed := normal.duplicate()
+	var pressed := normal.duplicate() as StyleBoxFlat
 	pressed.bg_color = color.darkened(0.12)
-	var disabled := normal.duplicate()
+	var disabled := normal.duplicate() as StyleBoxFlat
 	disabled.bg_color = Color(0.15, 0.17, 0.2, 1)
 	btn.add_theme_stylebox_override("normal", normal)
 	btn.add_theme_stylebox_override("hover", hover)
@@ -174,67 +258,6 @@ func _style_button(btn: Button, color: Color, emphasize: bool) -> void:
 	btn.add_theme_stylebox_override("disabled", disabled)
 	btn.add_theme_color_override("font_color", Color(0.95, 0.97, 1, 1))
 	btn.add_theme_color_override("font_disabled_color", Color(0.45, 0.5, 0.55, 1))
-
-
-func _process(delta: float) -> void:
-	_pulse += delta
-	_highlight_current_tile()
-	_update_camera(delta)
-	if _busy or _sim.get_phase() == DistrictSim.PHASE_OVER:
-		return
-	var player := _sim.get_player(_sim.get_current_player())
-	if not player.is_bot or player.bankrupt:
-		return
-	_bot_cooldown -= delta
-	if _bot_cooldown > 0.0:
-		return
-	_bot_cooldown = 0.55
-	_run_action(func() -> Array: return _sim.bot_act())
-
-
-func _follow_space_valid() -> bool:
-	return _follow_space_index >= 0 and _follow_space_index < _tile_centers.size()
-
-
-func _board_center() -> Vector2:
-	return _pivot.position
-
-
-func _framing_target() -> Vector2:
-	## Mostly stay on the table center; lean slightly toward the active space.
-	if not _follow_space_valid():
-		return _board_center()
-	return _board_center().lerp(_tile_world_pos(_follow_space_index), FOLLOW_LEAN)
-
-
-func _update_camera(delta: float) -> void:
-	if _orbiting or _panning:
-		return
-	if _follow_t <= 0.0 and not (_auto_orient and _busy and _follow_space_valid()):
-		return
-	if _follow_t > 0.0:
-		_follow_t = maxf(0.0, _follow_t - delta)
-	_follow_target = _framing_target()
-	var pos_t := 1.0 - exp(-FOLLOW_POS_RATE * delta)
-	_camera.position = _camera.position.lerp(_follow_target, pos_t)
-	if _auto_orient:
-		var rot_t := 1.0 - exp(-FOLLOW_ROT_RATE * delta)
-		_pivot.rotation = lerp_angle(_pivot.rotation, _follow_rot_target, rot_t)
-		# Recompute lean after the table turns so framing stays stable.
-		_follow_target = _framing_target()
-		_camera.position = _camera.position.lerp(_follow_target, pos_t)
-
-
-func _unhandled_input(event: InputEvent) -> void:
-	if _busy:
-		return
-	if event.is_action_pressed("ui_cancel"):
-		_submit(SceneRequest.push(PAUSE_PATH))
-		get_viewport().set_input_as_handled()
-	elif _sim.get_phase() == DistrictSim.PHASE_OVER:
-		if event.is_action_pressed("ui_accept"):
-			_submit(SceneRequest.replace(SETUP_PATH))
-			get_viewport().set_input_as_handled()
 
 
 func _on_board_gui_input(event: InputEvent) -> void:
@@ -245,596 +268,552 @@ func _on_board_gui_input(event: InputEvent) -> void:
 			_panning = false
 			_drag_last = mb.position
 			if mb.pressed:
-				_follow_t = 0.0
-				_auto_orient = false
+				_board.begin_orbit()
 			else:
-				# After orbit, ease camera back to table center.
-				_follow_space_index = -1
-				_follow_target = _board_center()
-				_follow_t = 0.6
+				_board.end_orbit()
 			_svc.accept_event()
 		elif mb.button_index == MOUSE_BUTTON_MIDDLE or mb.button_index == MOUSE_BUTTON_RIGHT:
 			_panning = mb.pressed
 			_orbiting = false
 			_drag_last = mb.position
 			if mb.pressed:
-				_follow_t = 0.0
-				_auto_orient = false
+				_board.begin_pan()
+			else:
+				_board.end_pan()
 			_svc.accept_event()
 		elif mb.pressed and mb.button_index == MOUSE_BUTTON_WHEEL_UP:
-			_zoom_at(mb.position, 1.1)
+			_board.zoom_by(1.1)
 			_svc.accept_event()
 		elif mb.pressed and mb.button_index == MOUSE_BUTTON_WHEEL_DOWN:
-			_zoom_at(mb.position, 1.0 / 1.1)
+			_board.zoom_by(1.0 / 1.1)
 			_svc.accept_event()
-	elif event is InputEventMouseMotion:
+	elif event is InputEventMouseMotion and (_orbiting or _panning):
 		var mm := event as InputEventMouseMotion
 		var delta := mm.position - _drag_last
 		_drag_last = mm.position
 		if _orbiting:
-			# Spin the table in place; keep the camera on the board center.
-			_pivot.rotation += delta.x * ORBIT_SENS
-			_camera.position = _board_center()
-			_svc.accept_event()
+			_board.orbit_by(delta.x)
 		elif _panning:
-			_camera.position -= delta / _camera.zoom.x
-			_svc.accept_event()
+			_board.pan_by(delta, _view_size())
+		_svc.accept_event()
 
 
-func _zoom_at(screen_pos: Vector2, factor: float) -> void:
-	var old_zoom := _camera.zoom.x
-	var new_zoom := clampf(old_zoom * factor, ZOOM_MIN, ZOOM_MAX)
-	if is_equal_approx(new_zoom, old_zoom):
-		return
-	var local := screen_pos - _svc.size * 0.5
-	var world_under := _camera.position + local / old_zoom
-	_camera.zoom = Vector2(new_zoom, new_zoom)
-	_camera.position = world_under - local / new_zoom
-	_follow_t = 0.0
-	_auto_orient = false
+func _on_view_resized() -> void:
+	if _board != null:
+		_board.fit(_view_size())
 
 
 func _view_size() -> Vector2:
-	var sz := _svc.size
-	if sz.x < 2.0 or sz.y < 2.0:
-		return Vector2(800, 600)
-	return sz
+	var size := _svc.size
+	if size.x < 2.0 or size.y < 2.0:
+		return Vector2(1280, 720)
+	return size
 
 
-func _fit_zoom_for_pivot(pivot_rot: float) -> float:
-	## World AABB of the board under the given pivot rotation, then fit in the viewport.
-	var view := _view_size()
-	var pad := PAD
-	var corners: Array[Vector2] = [
-		Vector2(_board_rect.position.x - pad, _board_rect.position.y - pad),
-		Vector2(_board_rect.end.x + pad, _board_rect.position.y - pad),
-		Vector2(_board_rect.end.x + pad, _board_rect.end.y + pad),
-		Vector2(_board_rect.position.x - pad, _board_rect.end.y + pad),
-	]
-	var min_p := Vector2(INF, INF)
-	var max_p := Vector2(-INF, -INF)
-	for c in corners:
-		var w := _pivot.position + c.rotated(pivot_rot)
-		min_p = min_p.min(w)
-		max_p = max_p.max(w)
-	var size := (max_p - min_p).max(Vector2(1, 1))
-	return clampf(minf(view.x / size.x, view.y / size.y), ZOOM_MIN, ZOOM_MAX)
+func _on_menu() -> void:
+	_submit(SceneRequest.push(PAUSE_PATH))
 
 
-func _fit_camera() -> void:
-	if _board_rect.size.x <= 1.0:
-		return
-	var z := _fit_zoom_for_pivot(REST_PIVOT_ROT)
-	_auto_orient = true
-	_follow_rot_target = REST_PIVOT_ROT
-	_follow_space_index = -1
-	_follow_t = 0.0
-	_camera.rotation = 0.0
-	var world_center := _board_center()
-	var tw := create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
-	tw.tween_property(_camera, "zoom", Vector2(z, z), 0.55)
-	tw.parallel().tween_property(_camera, "position", world_center, 0.55)
-	tw.parallel().tween_property(_pivot, "rotation", REST_PIVOT_ROT, 0.55)
+func _on_fit() -> void:
+	_board.fit(_view_size())
 
 
 func _on_roll() -> void:
-	if _busy or _sim.get_phase() != DistrictSim.PHASE_ROLL:
-		return
-	if _sim.get_player(_sim.get_current_player()).is_bot:
+	if _busy or not _human_turn() or _sim.get_phase() != DistrictSim.PHASE_ROLL:
 		return
 	_run_action(func() -> Array: return _sim.roll())
 
 
 func _on_buy() -> void:
-	if _busy or _sim.get_phase() != DistrictSim.PHASE_BUY:
-		return
-	if _sim.get_player(_sim.get_current_player()).is_bot:
+	if _busy or not _human_turn() or _sim.get_phase() != DistrictSim.PHASE_BUY:
 		return
 	_run_action(func() -> Array: return _sim.buy())
 
 
 func _on_skip() -> void:
-	if _busy or _sim.get_phase() != DistrictSim.PHASE_BUY:
-		return
-	if _sim.get_player(_sim.get_current_player()).is_bot:
+	if _busy or not _human_turn() or _sim.get_phase() != DistrictSim.PHASE_BUY:
 		return
 	_run_action(func() -> Array: return _sim.skip())
 
 
-func _run_action(action: Callable) -> void:
+func _on_done() -> void:
+	if _busy or not _human_turn() or _sim.get_phase() != DistrictSim.PHASE_MANAGE:
+		return
+	_run_action(func() -> Array: return _sim.end_manage())
+
+
+func _on_build() -> void:
+	if _busy or not _human_turn() or _sim.get_phase() != DistrictSim.PHASE_MANAGE:
+		return
+	if _build_pick.item_count <= 0:
+		_push_log("No district to build on.")
+		return
+	var space_i := int(_build_pick.get_item_metadata(_build_pick.selected))
+	_run_action(func() -> Array: return _sim.build(space_i), "Can't build there.")
+
+
+func _on_tour() -> void:
+	if _busy or not _human_turn() or _sim.get_phase() != DistrictSim.PHASE_TOUR:
+		return
+	if _tour_pick.item_count <= 0:
+		return
+	var space_i := int(_tour_pick.get_item_metadata(_tour_pick.selected))
+	_run_action(func() -> Array: return _sim.pick_tour_target(space_i))
+
+
+func _on_arena() -> void:
+	if _busy or not _human_turn() or _sim.get_phase() != DistrictSim.PHASE_ARENA:
+		return
+	_run_action(func() -> Array: return _sim.resolve_arena())
+
+
+func _on_chance() -> void:
+	if _busy or not _human_turn() or _sim.get_phase() != DistrictSim.PHASE_CHANCE:
+		return
+	_chance_arm = -1.0
+	_run_action(func() -> Array: return _sim.resolve_chance())
+
+
+func _on_bid() -> void:
+	if _busy or not _human_turn() or _sim.get_phase() != DistrictSim.PHASE_AUCTION:
+		return
+	var amount := maxi(_sim.get_auction_high_bid() + 10, 10)
+	_run_action(func() -> Array: return _sim.auction_bid(amount), "Bid not accepted.")
+
+
+func _on_auction_pass() -> void:
+	if _busy or not _human_turn() or _sim.get_phase() != DistrictSim.PHASE_AUCTION:
+		return
+	_run_action(func() -> Array: return _sim.auction_pass())
+
+
+func _on_gadget(gadget_id: String) -> void:
+	if _busy or not _human_turn():
+		return
+	var phase := _sim.get_phase()
+	if phase != DistrictSim.PHASE_ROLL and phase != DistrictSim.PHASE_MANAGE:
+		return
+	_run_action(func() -> Array: return _sim.use_gadget(gadget_id, -1), "Gadget unavailable.")
+
+
+func _run_action(action: Callable, empty_note: String = "") -> void:
+	if _busy:
+		return
 	_busy = true
-	_set_actions_enabled(false)
+	_refresh_hud()
 	var events: Array = action.call()
+	if events.is_empty() and empty_note != "":
+		_push_log(empty_note)
 	await _play_events(events)
+	if not is_inside_tree():
+		return
+	_board.sync_from_sim(_sim)
+	_board.layout_pawns(_sim)
+	var seat := _sim.get_player(_sim.get_current_player())
+	if not seat.bankrupt:
+		_board.set_follow_space(seat.position)
 	_busy = false
-	_paint_owners()
+	_bot_cooldown = 0.25
 	_refresh_hud()
 
 
 func _play_events(events: Array) -> void:
 	for item in events:
+		if not is_inside_tree():
+			return
 		var data := item as Dictionary
 		var type_name := str(data.get("type", ""))
 		match type_name:
 			"rolled":
-				_push_log(
-					"P%d rolled [b]%d+%d[/b]"
-					% [int(data.get("player", 0)) + 1, int(data.get("d1", 0)), int(data.get("d2", 0))]
-				)
-				await _animate_dice(int(data.get("d1", 1)), int(data.get("d2", 1)))
+				var d1 := int(data.get("d1", 1))
+				var d2 := int(data.get("d2", 1))
+				_push_log("%s rolled %d+%d" % [_seat(int(data.get("player", 0))), d1, d2])
+				_cue("dice")
+				_show_roll_sum(d1 + d2)
+				await _animate_dice(d1, d2)
 			"moved":
 				var pid := int(data.get("player", 0))
-				var from_i := int(data.get("from", 0))
 				var to_i := int(data.get("to", 0))
-				var steps := int(data.get("steps", 1))
-				_push_log(
-					"P%d → [color=#9ad0ff]%s[/color]"
-					% [pid + 1, _sim.get_config().space_at(to_i).name]
-				)
-				await _animate_pawn_path(pid, from_i, to_i, steps)
+				_push_log("%s → %s" % [_seat(pid), _space_name(to_i)])
+				_cue("hop")
+				await _animate_pawn_path(pid, int(data.get("from", 0)), to_i, int(data.get("steps", 1)))
+			"passed_go":
+				var amount := int(data.get("amount", 0))
+				_push_log("%s +$%d Plaza" % [_seat(int(data.get("player", 0))), amount])
+				_cue("cash")
+				_toast_cash(int(data.get("player", 0)), amount)
+			"offer_buy":
+				_push_log("Offer %s ($%d)" % [_space_name(int(data.get("space", 0))), int(data.get("price", 0))])
 			"bought":
 				var space_i := int(data.get("space", 0))
-				_push_log(
-					"[color=#f0c35a]P%d bought %s[/color]"
-					% [int(data.get("player", 0)) + 1, _sim.get_config().space_at(space_i).name]
-				)
-				await _pop_tile(space_i, Color(1.0, 0.85, 0.35, 1))
+				_push_log("%s bought %s" % [_seat(int(data.get("player", 0))), _space_name(space_i)])
+				_cue("buy")
+				_toast_cash(int(data.get("player", 0)), -int(data.get("price", 0)))
+				await _board.pop_tile(space_i)
+				_board.burst_at(space_i, Color(1.0, 0.85, 0.35, 1))
+			"skipped_buy":
+				_push_log("%s passed" % _seat(int(data.get("player", 0))))
 			"paid_rent":
-				_push_log(
-					"Rent [color=#ff8e8e]%d[/color]: P%d→P%d"
-					% [int(data.get("amount", 0)), int(data.get("from", 0)) + 1, int(data.get("to", 0)) + 1]
-				)
-				_toast_cash(int(data.get("from", 0)), -int(data.get("amount", 0)))
-				_toast_cash(int(data.get("to", 0)), int(data.get("amount", 0)))
+				var rent := int(data.get("amount", 0))
+				_push_log("Rent $%d %s→%s" % [rent, _seat(int(data.get("from", 0))), _seat(int(data.get("to", 0)))])
+				_cue("cash")
+				_toast_cash(int(data.get("from", 0)), -rent)
+				_toast_cash(int(data.get("to", 0)), rent)
+			"built":
+				var built_i := int(data.get("space", 0))
+				var level := int(data.get("level", 1))
+				var owner := int(data.get("player", 0))
+				_push_log("%s built %s L%d" % [_seat(owner), _space_name(built_i), level])
+				_cue("build")
+				await _board.pop_building(built_i, level, _pawn_color(owner))
+			"sold_build":
+				var sold_i := int(data.get("space", 0))
+				var seller := int(data.get("player", 0))
+				_push_log("%s sold a floor on %s" % [_seat(seller), _space_name(sold_i)])
+				_board.set_building(sold_i, int(data.get("level", 0)), _pawn_color(seller))
+				_toast_cash(seller, int(data.get("refund", 0)))
 			"taxed":
-				_push_log("Tax %d on P%d" % [int(data.get("amount", 0)), int(data.get("player", 0)) + 1])
-				_toast_cash(int(data.get("player", 0)), -int(data.get("amount", 0)))
-			"passed_go":
-				_push_log("[color=#7dcea0]P%d +$%d Plaza[/color]" % [int(data.get("player", 0)) + 1, int(data.get("amount", 0))])
-				_toast_cash(int(data.get("player", 0)), int(data.get("amount", 0)))
+				var tax := int(data.get("amount", 0))
+				_push_log("Tax $%d on %s" % [tax, _seat(int(data.get("player", 0)))])
+				_cue("cash")
+				_toast_cash(int(data.get("player", 0)), -tax)
 			"went_to_jail":
 				var jail_pid := int(data.get("player", 0))
-				_push_log("[color=#d98880]P%d → Holding[/color]" % [jail_pid + 1])
-				_snap_pawn(jail_pid, _sim.get_config().jail_index)
-				await _shake_camera(0.25)
+				_push_log("%s → Holding" % _seat(jail_pid))
+				_cue("shake")
+				_board.snap_pawn(jail_pid, _sim.get_config().jail_index)
+				_board.set_follow_space(_sim.get_config().jail_index)
+				await _board.shake(0.85)
 			"left_jail":
-				_push_log("P%d left Holding" % [int(data.get("player", 0)) + 1])
-			"bankrupt":
-				_push_log("[color=#e74c3c]P%d bankrupt[/color]" % [int(data.get("player", 0)) + 1])
-				await _shake_camera(0.35)
-			"offer_buy":
-				_push_log(
-					"Offer: %s ($%d)"
-					% [_sim.get_config().space_at(int(data.get("space", 0))).name, int(data.get("price", 0))]
-				)
+				_push_log("%s left Holding" % _seat(int(data.get("player", 0))))
+			"chance_pending":
+				_push_log("%s draws Chance" % _seat(int(data.get("player", 0))))
+			"chance_drawn":
+				var card := _as_dict(data.get("card", {}))
+				_push_log(str(card.get("label", "Chance")))
+				_cue("chance")
+				await _show_chance(card)
+			"chance_gain":
+				var gain := int(data.get("amount", 0))
+				_push_log("%s +$%d" % [_seat(int(data.get("player", 0))), gain])
+				_cue("cash")
+				_toast_cash(int(data.get("player", 0)), gain)
+			"chance_steal":
+				var stolen := int(data.get("amount", 0))
+				_push_log("%s collected $%d" % [_seat(int(data.get("player", 0))), stolen])
+				_toast_cash(int(data.get("player", 0)), stolen)
+			"tour_pending":
+				_push_log("%s — pick a district" % _seat(int(data.get("player", 0))))
+			"toured":
+				var tour_pid := int(data.get("player", 0))
+				var dest := int(data.get("to", 0))
+				_push_log("%s tours to %s" % [_seat(tour_pid), _space_name(dest)])
+				_cue("hop")
+				await _hop_pawn(tour_pid, dest)
+			"arena_ante":
+				var ante := int(data.get("amount", 0))
+				_push_log("%s arena ante $%d" % [_seat(int(data.get("player", 0))), ante])
+				_toast_cash(int(data.get("player", 0)), -ante)
+			"arena_roll":
+				var face := int(data.get("roll", 1))
+				_push_log("%s arena die %d" % [_seat(int(data.get("player", 0))), face])
+				_cue("dice")
+				_show_roll_sum(face)
+				await _animate_dice(face, face, false)
+			"arena_won":
+				var pot := int(data.get("amount", 0))
+				_push_log("%s takes the pot $%d" % [_seat(int(data.get("player", 0))), pot])
+				_cue("cash")
+				_toast_cash(int(data.get("player", 0)), pot)
+			"arena_miss":
+				_push_log("%s misses the pot" % _seat(int(data.get("player", 0))))
+			"auction_started":
+				_push_log("Auction: %s" % _space_name(int(data.get("space", _sim.get_auction_space()))))
+			"auction_turn":
+				_push_log("Auction bid — %s" % _seat(int(data.get("player", 0))))
+			"auction_bid":
+				_push_log("%s bids $%d" % [_seat(int(data.get("player", 0))), int(data.get("amount", 0))])
+			"auction_pass":
+				_push_log("%s passes the auction" % _seat(int(data.get("player", 0))))
+			"auction_won":
+				var won_i := int(data.get("space", 0))
+				_push_log("%s wins %s" % [_seat(int(data.get("player", 0))), _space_name(won_i)])
+				_cue("buy")
+				await _board.pop_tile(won_i)
+			"auction_failed":
+				_push_log("Auction failed")
+			"gadget_used":
+				_push_log("%s uses %s" % [_seat(int(data.get("player", 0))), str(data.get("gadget", "gadget"))])
+			"buff_applied":
+				_push_log("%s %s" % [_seat(int(data.get("player", 0))), str(data.get("buff", "buff"))])
+			"buff_expired":
+				_push_log("%s %s faded" % [_seat(int(data.get("player", 0))), str(data.get("buff", "buff"))])
+			"shield_blocked":
+				_push_log("%s shield blocks rent" % _seat(int(data.get("player", 0))))
+			"cash_stolen":
+				var take := int(data.get("amount", 0))
+				_push_log("%s takes $%d from %s" % [_seat(int(data.get("to", 0))), take, _seat(int(data.get("from", 0)))])
+				_toast_cash(int(data.get("from", 0)), -take)
+				_toast_cash(int(data.get("to", 0)), take)
+			"trade_offered":
+				_push_log("Trade offered")
+			"trade_accepted":
+				_push_log("Trade accepted")
+			"trade_rejected":
+				_push_log("Trade rejected")
 			"turn_changed":
-				_push_log("— Turn P%d —" % [int(data.get("player", 0)) + 1])
+				_push_log("Turn %s" % _seat(int(data.get("player", 0))))
+			"bankrupt":
+				_push_log("%s bankrupt" % _seat(int(data.get("player", 0))))
+				_cue("shake")
+				await _board.shake(1.15)
 			"game_over":
-				_push_log("[b]Winner: P%d[/b]" % [int(data.get("winner", 0)) + 1])
-			"skipped_buy":
-				_push_log("P%d passed" % [int(data.get("player", 0)) + 1])
+				_push_log("Winner %s" % _seat(int(data.get("winner", 0))))
+			"frozen_skip":
+				_push_log("%s is frozen" % _seat(int(data.get("player", 0))))
+			"parking_collected":
+				var parked := int(data.get("amount", 0))
+				_push_log("%s collects $%d" % [_seat(int(data.get("player", 0))), parked])
+				_toast_cash(int(data.get("player", 0)), parked)
+			"used_get_out":
+				_push_log("%s uses a release card" % _seat(int(data.get("player", 0))))
 			_:
-				_push_log(type_name)
-		_sync_cash_toasts()
-		_refresh_hud()
+				if type_name != "":
+					_push_log(type_name)
+		if is_inside_tree():
+			_refresh_hud()
 
 
-func _animate_dice(d1: int, d2: int) -> void:
+func _animate_dice(d1: int, d2: int, pair: bool = true) -> void:
 	_die_a.texture = load("res://games/districts/assets/kenney_boardgame/dice/die_%d.png" % clampi(d1, 1, 6))
-	_die_b.texture = load("res://games/districts/assets/kenney_boardgame/dice/die_%d.png" % clampi(d2, 1, 6))
+	_die_b.visible = pair
+	if pair:
+		_die_b.texture = load("res://games/districts/assets/kenney_boardgame/dice/die_%d.png" % clampi(d2, 1, 6))
 	_dice_overlay.visible = true
 	_dice_overlay.pivot_offset = _dice_overlay.size * 0.5
+	if _dice_overlay.pivot_offset == Vector2.ZERO:
+		_dice_overlay.pivot_offset = Vector2(72, 32)
 	_dice_overlay.modulate.a = 0.0
 	_dice_overlay.scale = Vector2(0.6, 0.6)
 	var tw := create_tween().set_parallel(true)
-	tw.tween_property(_dice_overlay, "modulate:a", 1.0, 0.12)
-	tw.tween_property(_dice_overlay, "scale", Vector2(1.15, 1.15), 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_property(_dice_overlay, "modulate:a", 1.0, 0.1)
+	tw.tween_property(_dice_overlay, "scale", Vector2(1.12, 1.12), 0.14).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	await tw.finished
+	if not is_inside_tree():
+		return
 	var settle := create_tween()
-	settle.tween_property(_dice_overlay, "scale", Vector2.ONE, 0.1)
+	settle.tween_property(_dice_overlay, "scale", Vector2.ONE, 0.08)
 	await settle.finished
-	await get_tree().create_timer(0.55).timeout
+	if not is_inside_tree():
+		return
+	await get_tree().create_timer(0.42).timeout
+	if not is_inside_tree():
+		return
 	var fade := create_tween()
-	fade.tween_property(_dice_overlay, "modulate:a", 0.0, 0.2)
+	fade.tween_property(_dice_overlay, "modulate:a", 0.0, 0.16)
 	await fade.finished
+	if not is_inside_tree():
+		return
 	_dice_overlay.visible = false
 	_dice_overlay.modulate.a = 1.0
 	_dice_overlay.scale = Vector2.ONE
 
 
+func _show_roll_sum(total: int) -> void:
+	_roll_sum.text = str(total)
+	_roll_sum.visible = true
+	_roll_sum.pivot_offset = _roll_sum.size * 0.5
+	if _roll_sum.pivot_offset == Vector2.ZERO:
+		_roll_sum.pivot_offset = Vector2(70, 48)
+	_roll_sum.modulate.a = 0.0
+	_roll_sum.scale = Vector2(0.55, 0.55)
+	var tw := create_tween()
+	tw.tween_property(_roll_sum, "modulate:a", 1.0, 0.1)
+	tw.parallel().tween_property(_roll_sum, "scale", Vector2(1.15, 1.15), 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_property(_roll_sum, "scale", Vector2.ONE, 0.08)
+	tw.tween_interval(0.55)
+	tw.tween_property(_roll_sum, "modulate:a", 0.0, 0.22)
+	tw.tween_callback(func() -> void:
+		if is_instance_valid(_roll_sum):
+			_roll_sum.visible = false
+			_roll_sum.modulate.a = 1.0
+	)
+
+
 func _animate_pawn_path(player_id: int, from_i: int, to_i: int, steps: int) -> void:
-	if player_id < 0 or player_id >= _pawn_nodes.size():
+	var pawn := _board.pawn_node(player_id)
+	if pawn == null:
 		return
-	var pawn := _pawn_nodes[player_id]
+	if steps == 0:
+		_board.snap_pawn(player_id, to_i)
+		_board.set_follow_space(to_i)
+		_board.flash_tile(to_i)
+		return
 	var count := _sim.get_config().space_count()
 	var cur := from_i
-	_auto_orient = true
-	for _s in maxi(steps, 1):
-		cur = (cur + 1) % count
-		var target := _tile_centers[cur] + _pawn_offset(player_id)
-		_set_follow_space(cur)
+	var dir := 1 if steps > 0 else -1
+	for _step in absi(steps):
+		cur = posmod(cur + dir, count)
+		var target := _board.pawn_local(player_id, cur)
+		_board.set_follow_space(cur)
 		var hop := create_tween()
 		hop.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-		hop.tween_property(pawn, "position", target + Vector2(0, -14), STEP_SEC * 0.5)
-		hop.tween_property(pawn, "position", target, STEP_SEC * 0.5)
+		hop.tween_property(pawn, "position", target + Vector3(0, 18, 0), STEP_SEC * 0.45)
+		hop.tween_property(pawn, "position", target, STEP_SEC * 0.55)
 		await hop.finished
-		if cur < _tile_sprites.size():
-			var flash := create_tween()
-			flash.tween_property(_tile_sprites[cur], "modulate", Color(1.3, 1.3, 1.15, 1), 0.08)
-			flash.tween_property(_tile_sprites[cur], "modulate", Color.WHITE, 0.18)
-	pawn.position = _tile_centers[to_i] + _pawn_offset(player_id)
-	_set_follow_space(to_i)
-	_update_space_chip(to_i)
+		if not is_inside_tree():
+			return
+		_board.flash_tile(cur)
+	_board.snap_pawn(player_id, to_i)
+	_board.set_follow_space(to_i)
 
 
-func _set_follow_space(space_i: int) -> void:
-	if space_i < 0 or space_i >= _tile_centers.size():
+func _hop_pawn(player_id: int, space_i: int) -> void:
+	var pawn := _board.pawn_node(player_id)
+	if pawn == null:
 		return
-	_follow_space_index = space_i
-	# Put this side at the bottom of the diamond view (readable band-outward layout).
-	_follow_rot_target = REST_PIVOT_ROT - float(_space_side(space_i)) * (PI * 0.5)
-	_follow_target = _framing_target()
-	_follow_t = 1.2
-	_auto_orient = true
+	var target := _board.pawn_local(player_id, space_i)
+	_board.set_follow_space(space_i)
+	var peak := (pawn.position + target) * 0.5 + Vector3(0, 42, 0)
+	var hop := create_tween()
+	hop.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	hop.tween_property(pawn, "position", peak, 0.2)
+	hop.tween_property(pawn, "position", target, 0.2)
+	await hop.finished
+	if is_inside_tree():
+		_board.flash_tile(space_i)
 
 
-func _tile_world_pos(space_i: int) -> Vector2:
-	return _pivot.to_global(_tile_centers[space_i])
-
-
-func _pop_tile(space_i: int, tint: Color) -> void:
-	if space_i < 0 or space_i >= _tile_sprites.size():
+func _show_chance(card: Dictionary) -> void:
+	_chance_label.text = str(card.get("label", "Chance"))
+	_chance_card.visible = true
+	_chance_card.modulate.a = 1.0
+	_chance_card.pivot_offset = _chance_card.size * 0.5
+	if _chance_card.pivot_offset == Vector2.ZERO:
+		_chance_card.pivot_offset = Vector2(180, 48)
+	_chance_card.scale = Vector2(0.06, 1.0)
+	_chance_card.rotation_degrees = -16.0
+	var tw := create_tween()
+	tw.tween_property(_chance_card, "scale", Vector2.ONE, 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.parallel().tween_property(_chance_card, "rotation_degrees", 0.0, 0.22)
+	await tw.finished
+	if not is_inside_tree():
 		return
-	var sprite := _tile_sprites[space_i]
-	var tw := create_tween()
-	tw.tween_property(sprite, "scale", Vector2(1.25, 1.25), 0.12).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tw.parallel().tween_property(sprite, "modulate", tint, 0.12)
-	tw.tween_property(sprite, "scale", Vector2.ONE, 0.18)
-	tw.parallel().tween_property(sprite, "modulate", Color.WHITE, 0.18)
-	await tw.finished
-	_burst_at(_tile_centers[space_i], tint)
-
-
-func _burst_at(at: Vector2, tint: Color) -> void:
-	for i in 8:
-		var poly := Polygon2D.new()
-		poly.polygon = PackedVector2Array([Vector2(-2, -2), Vector2(2, -2), Vector2(2, 2), Vector2(-2, 2)])
-		poly.color = tint
-		poly.position = at
-		_fx.add_child(poly)
-		var angle := TAU * float(i) / 8.0
-		var dest := at + Vector2(cos(angle), sin(angle)) * 36.0
-		var tw := create_tween()
-		tw.tween_property(poly, "position", dest, 0.28).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-		tw.parallel().tween_property(poly, "modulate:a", 0.0, 0.28)
-		tw.tween_callback(poly.queue_free)
-
-
-func _shake_camera(amount: float) -> void:
-	var base := _camera.position
-	var tw := create_tween()
-	for _i in 4:
-		tw.tween_property(_camera, "position", base + Vector2(randf_range(-8, 8), randf_range(-6, 6)) * amount, 0.04)
-	tw.tween_property(_camera, "position", base, 0.06)
-	await tw.finished
+	await get_tree().create_timer(0.55).timeout
+	if not is_inside_tree():
+		return
+	var out := create_tween()
+	out.tween_property(_chance_card, "scale:x", 0.06, 0.14)
+	out.parallel().tween_property(_chance_card, "modulate:a", 0.0, 0.14)
+	await out.finished
+	if not is_inside_tree():
+		return
+	_chance_card.visible = false
+	_chance_card.scale = Vector2.ONE
+	_chance_card.modulate.a = 1.0
+	_chance_card.rotation_degrees = 0.0
 
 
 func _toast_cash(player_id: int, delta_cash: int) -> void:
-	if player_id < 0 or player_id >= _pawn_nodes.size() or delta_cash == 0:
+	if delta_cash == 0 or player_id < 0 or player_id >= _cards.size():
 		return
 	var label := Label.new()
-	label.text = ("%+d" % delta_cash)
+	label.text = "%+d" % delta_cash
 	label.add_theme_font_size_override("font_size", 18)
 	label.add_theme_color_override(
 		"font_color",
-		Color(0.45, 0.95, 0.65, 1) if delta_cash > 0 else Color(1.0, 0.45, 0.45, 1)
+		Color(0.45, 0.95, 0.65, 1) if delta_cash > 0 else Color(1.0, 0.45, 0.4, 1)
 	)
-	label.position = _svc.size * 0.5 + Vector2(float(player_id) * 18.0 - 30.0, -40.0)
-	_toast_layer.add_child(label)
+	label.position = Vector2(28, 8)
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_cards[player_id].add_child(label)
 	var tw := create_tween()
-	tw.tween_property(label, "position:y", label.position.y - 40.0, 0.7)
+	tw.tween_property(label, "position:y", label.position.y - 36.0, 0.7)
 	tw.parallel().tween_property(label, "modulate:a", 0.0, 0.7)
 	tw.tween_callback(label.queue_free)
 
 
-func _sync_cash_toasts() -> void:
-	for i in _sim.get_player_count():
-		var cash := _sim.get_player(i).cash
-		if i < _cash_cache.size() and cash != _cash_cache[i]:
-			_cash_cache[i] = cash
-		elif i >= _cash_cache.size():
-			_cash_cache.append(cash)
-
-
 func _push_log(line: String) -> void:
-	_log_lines.append(line)
-	while _log_lines.size() > 12:
-		_log_lines.remove_at(0)
-	_log.text = "\n".join(_log_lines)
-	_log.scroll_to_line(maxi(_log.get_line_count() - 1, 0))
+	_feed.text = line
 
 
-func _snap_pawn(player_id: int, space_i: int) -> void:
-	if player_id < 0 or player_id >= _pawn_nodes.size():
-		return
-	if space_i < 0 or space_i >= _tile_centers.size():
-		return
-	_pawn_nodes[player_id].position = _tile_centers[space_i] + _pawn_offset(player_id)
-	_set_follow_space(space_i)
-	_update_space_chip(space_i)
-
-
-func _paint_owners() -> void:
-	for i in _owner_pips.size():
-		var owner := _sim.get_owner(i)
-		var pip := _owner_pips[i]
-		if owner >= 0:
-			pip.visible = true
-			pip.color = PAWN_COLORS[owner % PAWN_COLORS.size()]
-		else:
-			pip.visible = false
-
-
-func _build_board() -> void:
-	for child in _board.get_children():
-		child.queue_free()
-	_tile_sprites.clear()
-	_owner_pips.clear()
-
-	var absolute := _square_ring_centers(_sim.get_config().space_count())
-	var min_p := Vector2(INF, INF)
-	var max_p := Vector2(-INF, -INF)
-	for center in absolute:
-		min_p = min_p.min(center - TILE_HALF)
-		max_p = max_p.max(center + TILE_HALF)
-	var abs_rect := Rect2(min_p, max_p - min_p)
-	var origin := abs_rect.get_center()
-	_pivot.position = origin
-	_pivot.rotation = REST_PIVOT_ROT
-	_camera.rotation = 0.0
-
-	_tile_centers.clear()
-	for center in absolute:
-		_tile_centers.append(center - origin)
-	_board_rect = Rect2(-abs_rect.size * 0.5, abs_rect.size)
-
-	_setup_table_surface()
-
-	for i in _sim.get_config().space_count():
-		var space := _sim.get_config().space_at(i)
-		var local := _tile_centers[i]
-		var sprite := Sprite2D.new()
-		sprite.texture = DistrictTileBaker.bake(space)
-		sprite.centered = true
-		sprite.position = local
-		sprite.rotation = _space_tile_rotation(i)
-		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-		var pip := Polygon2D.new()
-		pip.polygon = PackedVector2Array([
-			Vector2(-5, 0), Vector2(0, -5), Vector2(5, 0), Vector2(0, 5),
-		])
-		# Toward board center in local tile space (band is at texture top / outer).
-		pip.position = Vector2(0, 36)
-		pip.visible = false
-		pip.z_index = 2
-		sprite.add_child(pip)
-		_board.add_child(sprite)
-		_tile_sprites.append(sprite)
-		_owner_pips.append(pip)
-
-
-func _setup_table_surface() -> void:
-	var felt_tex: Texture2D = load("res://games/districts/assets/tiles/felt.png")
-	_table_felt.texture = felt_tex
-	_table_felt.centered = true
-	_table_felt.position = Vector2.ZERO
-	_table_felt.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	var pad := 140.0
-	var size := _board_rect.size + Vector2(pad, pad)
-	if felt_tex != null:
-		_table_felt.scale = Vector2(
-			size.x / float(felt_tex.get_width()),
-			size.y / float(felt_tex.get_height())
-		)
-	_table_felt.modulate = Color(0.75, 0.92, 0.8, 1)
-
-	# Square plate filling the hollow center of the track.
-	var inset := EDGE_H * 0.55
-	var half := _board_rect.size * 0.5 - Vector2(inset, inset)
-	half = half.max(Vector2(40, 40))
-	_table_plate.polygon = PackedVector2Array([
-		Vector2(-half.x, -half.y),
-		Vector2(half.x, -half.y),
-		Vector2(half.x, half.y),
-		Vector2(-half.x, half.y),
-	])
-	_table_plate.color = Color(0.1, 0.28, 0.18, 1)
-	_table_plate.position = Vector2.ZERO
-
-
-func _build_pawns() -> void:
-	for child in _pawns.get_children():
-		child.queue_free()
-	_pawn_nodes.clear()
-	for i in _sim.get_player_count():
-		var sprite := Sprite2D.new()
-		sprite.texture = load(MEEPLE_PATHS[i % MEEPLE_PATHS.size()])
-		sprite.centered = true
-		sprite.scale = Vector2(0.85, 0.85)
-		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-		sprite.z_index = 10
-		sprite.position = _tile_centers[0] + _pawn_offset(i)
-		var shadow := Sprite2D.new()
-		shadow.texture = sprite.texture
-		shadow.centered = true
-		shadow.modulate = Color(0, 0, 0, 0.35)
-		shadow.position = Vector2(3, 5)
-		shadow.z_index = -1
-		sprite.add_child(shadow)
-		_pawns.add_child(sprite)
-		_pawn_nodes.append(sprite)
-
-
-func _pawn_offset(player_id: int) -> Vector2:
-	return Vector2(float(player_id) * 14.0 - 21.0, -30.0 - float(player_id % 2) * 10.0)
-
-
-func _space_side(index: int) -> int:
-	var per_side := maxi(_sim.get_config().space_count() / 4, 1)
-	return clampi(int(index / per_side), 0, 3)
-
-
-func _space_tile_rotation(index: int) -> float:
-	## Texture band is at the top; rotate so the band faces the outer edge.
-	match _space_side(index):
-		0: # bottom, outer +Y
-			return PI
-		1: # right, outer +X
-			return PI * 0.5
-		2: # top, outer -Y
-			return 0.0
-		3: # left, outer -X
-			return -PI * 0.5
-	return 0.0
-
-
-func _square_ring_centers(count: int) -> Array[Vector2]:
-	var per := maxi(count / 4, 1)
-	var edges := maxi(per - 1, 1)
-	var corner_r := CORNER * 0.5
-	var arm := float(edges) * EDGE_W * 0.5 + corner_r
-	var centers: Array[Vector2] = []
-	centers.resize(count)
-	for i in count:
-		var side := int(i / per)
-		var slot := i % per
-		var pos := Vector2.ZERO
-		match side:
-			0: # bottom: left → right
-				if slot == 0:
-					pos = Vector2(-arm, arm)
-				else:
-					var x0 := -arm + corner_r + EDGE_W * 0.5
-					pos = Vector2(x0 + float(slot - 1) * EDGE_W, arm)
-			1: # right: bottom → top
-				if slot == 0:
-					pos = Vector2(arm, arm)
-				else:
-					var y0 := arm - corner_r - EDGE_W * 0.5
-					pos = Vector2(arm, y0 - float(slot - 1) * EDGE_W)
-			2: # top: right → left
-				if slot == 0:
-					pos = Vector2(arm, -arm)
-				else:
-					var x0 := arm - corner_r - EDGE_W * 0.5
-					pos = Vector2(x0 - float(slot - 1) * EDGE_W, -arm)
-			3: # left: top → bottom
-				if slot == 0:
-					pos = Vector2(-arm, -arm)
-				else:
-					var y0 := -arm + corner_r + EDGE_W * 0.5
-					pos = Vector2(-arm, y0 + float(slot - 1) * EDGE_W)
-		centers[i] = pos
-	return centers
-
-
-func _highlight_current_tile() -> void:
-	if _tile_sprites.is_empty() or _busy:
-		return
-	for sprite in _tile_sprites:
-		sprite.scale = Vector2.ONE
-	var player := _sim.get_player(_sim.get_current_player())
-	if player.position >= 0 and player.position < _tile_sprites.size():
-		var s := 1.0 + 0.07 * (0.5 + 0.5 * sin(_pulse * 3.5))
-		_tile_sprites[player.position].scale = Vector2(s, s)
-		_update_space_chip(player.position)
-
-
-func _update_space_chip(space_i: int) -> void:
-	if space_i < 0 or space_i >= _sim.get_config().space_count():
-		_space_chip.visible = false
-		return
-	var space := _sim.get_config().space_at(space_i)
-	var owner := _sim.get_owner(space_i)
-	var owner_txt := ""
-	if owner >= 0:
-		owner_txt = " · P%d" % (owner + 1)
-	_space_chip_label.text = "%s%s" % [space.name, owner_txt]
-	_space_chip.visible = true
+func _cue(cue: String) -> void:
+	if _audio != null:
+		_audio.play_cue(cue)
 
 
 func _refresh_hud() -> void:
-	for child in _roster.get_children():
-		child.queue_free()
-	for i in _sim.get_player_count():
+	var count := _sim.get_player_count()
+	var current := _sim.get_current_player()
+	var bots := _bot_count()
+	for i in _cards.size():
+		var card := _cards[i]
+		card.visible = i < count
+		if i >= count:
+			continue
 		var player := _sim.get_player(i)
-		var card := PanelContainer.new()
-		var style := StyleBoxFlat.new()
-		style.bg_color = Color(0.12, 0.14, 0.18, 1)
-		style.set_corner_radius_all(8)
-		style.content_margin_left = 10
-		style.content_margin_right = 10
-		style.content_margin_top = 6
-		style.content_margin_bottom = 6
-		if i == _sim.get_current_player():
-			style.set_border_width_all(1)
-			style.border_color = PAWN_COLORS[i % PAWN_COLORS.size()]
-		card.add_theme_stylebox_override("panel", style)
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 8)
-		var swatch := ColorRect.new()
-		swatch.custom_minimum_size = Vector2(10, 28)
-		swatch.color = PAWN_COLORS[i % PAWN_COLORS.size()]
-		var text := Label.new()
-		var bot := " · bot" if player.is_bot else ""
-		var jail := " · jail" if player.in_jail else ""
-		var dead := " · OUT" if player.bankrupt else ""
-		text.text = "P%d%s\n$%d · %d props%s%s" % [
-			i + 1, bot, player.cash, player.owned.size(), jail, dead,
-		]
-		text.add_theme_font_size_override("font_size", 13)
-		text.add_theme_color_override("font_color", Color(0.9, 0.93, 0.97, 1))
-		row.add_child(swatch)
-		row.add_child(text)
-		card.add_child(row)
-		_roster.add_child(card)
+		var nick := "P%d" % (i + 1)
+		if player.is_bot:
+			nick = "Bot" if bots <= 1 else "Bot %d" % (i + 1)
+		var nick_label := card.get_node("Row/Text/Nick") as Label
+		var cash_label := card.get_node("Row/Text/Cash") as Label
+		var avatar := card.get_node("Row/Avatar") as ColorRect
+		nick_label.text = nick
+		var extra := ""
+		if player.bankrupt:
+			extra = " · out"
+		elif player.in_jail:
+			extra = " · island"
+		cash_label.text = "$%d%s" % [player.cash, extra]
+		avatar.color = _pawn_color(i)
+		card.modulate = Color(1, 1, 1, 0.5) if player.bankrupt else Color.WHITE
+		var style := _card_styles[i]
+		style.set_border_width_all(2 if i == current and not player.bankrupt else 1)
+		style.border_color = _pawn_color(i) if i == current else Color(1, 1, 1, 0.08)
 
 	var phase := _sim.get_phase()
-	_turn.text = "Seat %d · %s" % [_sim.get_current_player() + 1, phase.to_upper()]
-	if phase == DistrictSim.PHASE_BUY and _sim.get_pending_space() >= 0:
-		var space := _sim.get_config().space_at(_sim.get_pending_space())
-		_offer.text = "Buy %s for $%d?" % [space.name, space.price]
-		_offer.visible = true
-	else:
-		_offer.visible = false
-	_set_actions_enabled(not _busy)
+	var human := _human_turn()
+	_status.text = "%s · %s" % [_seat(current), phase.to_upper()]
+	_offer.text = _offer_text(phase)
+	_offer.visible = _offer.text != ""
+	_sync_build_list(phase)
+	_sync_tour_list(phase)
+	_sync_gadgets(phase, human)
+	if phase == DistrictSim.PHASE_AUCTION:
+		var next_bid := maxi(_sim.get_auction_high_bid() + 10, 10)
+		_bid.text = "Bid $%d" % next_bid
+	_roll.visible = phase == DistrictSim.PHASE_ROLL
+	_buy.visible = phase == DistrictSim.PHASE_BUY
+	_skip.visible = phase == DistrictSim.PHASE_BUY
+	_done.visible = phase == DistrictSim.PHASE_MANAGE
+	_build_row.visible = phase == DistrictSim.PHASE_MANAGE and human
+	_tour_row.visible = phase == DistrictSim.PHASE_TOUR and human
+	_arena_btn.visible = phase == DistrictSim.PHASE_ARENA
+	_chance_btn.visible = phase == DistrictSim.PHASE_CHANCE
+	_extra_row.visible = _arena_btn.visible or _chance_btn.visible
+	_auction_row.visible = phase == DistrictSim.PHASE_AUCTION and human
+	var unlocked := not _busy and human
+	_fit_btn.disabled = false
+	_roll.disabled = not (unlocked and phase == DistrictSim.PHASE_ROLL)
+	_buy.disabled = not (unlocked and phase == DistrictSim.PHASE_BUY)
+	_skip.disabled = not (unlocked and phase == DistrictSim.PHASE_BUY)
+	_done.disabled = not (unlocked and phase == DistrictSim.PHASE_MANAGE)
+	_build_btn.disabled = not (unlocked and phase == DistrictSim.PHASE_MANAGE and _build_pick.item_count > 0)
+	_tour_go.disabled = not (unlocked and phase == DistrictSim.PHASE_TOUR)
+	_arena_btn.disabled = not (unlocked and phase == DistrictSim.PHASE_ARENA)
+	_chance_btn.disabled = not (unlocked and phase == DistrictSim.PHASE_CHANCE)
+	_auction_pass.disabled = not (unlocked and phase == DistrictSim.PHASE_AUCTION)
+	var bid_amount := maxi(_sim.get_auction_high_bid() + 10, 10)
+	var can_bid := _sim.get_player(current).cash >= bid_amount
+	_bid.disabled = not (unlocked and phase == DistrictSim.PHASE_AUCTION and can_bid)
 	if phase == DistrictSim.PHASE_OVER:
 		_banner.visible = true
-		_banner_label.text = "P%d holds the districts\nEnter — new match" % [_sim.get_winner() + 1]
+		var winner := _sim.get_winner()
+		_banner_label.text = "%s holds the districts\nEnter — new match" % _seat(winner)
 		if not _banner_shown:
 			_banner_shown = true
 			_banner.pivot_offset = _banner.size * 0.5
-			_banner.scale = Vector2(0.85, 0.85)
+			_banner.scale = Vector2(0.86, 0.86)
 			_banner.modulate.a = 0.0
 			var tw := create_tween().set_parallel(true)
 			tw.tween_property(_banner, "modulate:a", 1.0, 0.2)
@@ -844,17 +823,127 @@ func _refresh_hud() -> void:
 		_banner_shown = false
 
 
-func _set_actions_enabled(enabled: bool) -> void:
-	var phase := _sim.get_phase()
-	var human := not _sim.get_player(_sim.get_current_player()).is_bot
-	_fit_btn.disabled = false
-	_roll.disabled = not (enabled and phase == DistrictSim.PHASE_ROLL and human)
-	_buy.disabled = not (enabled and phase == DistrictSim.PHASE_BUY and human)
-	_skip.disabled = not (enabled and phase == DistrictSim.PHASE_BUY and human)
-	if phase == DistrictSim.PHASE_OVER:
-		_roll.disabled = true
-		_buy.disabled = true
-		_skip.disabled = true
+func _offer_text(phase: String) -> String:
+	if phase == DistrictSim.PHASE_BUY and _sim.get_pending_space() >= 0:
+		var space := _sim.get_config().space_at(_sim.get_pending_space())
+		return "Buy %s for $%d?" % [space.name, space.price]
+	if phase == DistrictSim.PHASE_AUCTION and _sim.get_auction_space() >= 0:
+		var space := _sim.get_config().space_at(_sim.get_auction_space())
+		var high := _sim.get_auction_high_bid()
+		var who := ""
+		if _sim.get_auction_high_bidder() >= 0:
+			who = " · %s" % _seat(_sim.get_auction_high_bidder())
+		return "Auction %s · $%d%s" % [space.name, high, who]
+	if phase == DistrictSim.PHASE_TOUR:
+		return "World Tour — choose a space"
+	if phase == DistrictSim.PHASE_ARENA:
+		return "Arena pot $%d — 4+ wins" % _sim.get_arena_pot()
+	if phase == DistrictSim.PHASE_CHANCE:
+		return "Chance"
+	if phase == DistrictSim.PHASE_MANAGE:
+		return "Manage districts, then Done"
+	return ""
+
+
+func _sync_build_list(phase: String) -> void:
+	if phase != DistrictSim.PHASE_MANAGE:
+		_build_key = ""
+		return
+	var player := _sim.get_player(_sim.get_current_player())
+	var key := ""
+	for i in player.owned.size():
+		var space_i := player.owned[i]
+		key += "%d:%d," % [space_i, _sim.get_build_level(space_i)]
+	if key == _build_key:
+		return
+	_build_key = key
+	_build_pick.clear()
+	var select_at := 0
+	for i in player.owned.size():
+		var space_i := player.owned[i]
+		var space := _sim.get_config().space_at(space_i)
+		_build_pick.add_item("%s L%d" % [space.name, _sim.get_build_level(space_i)])
+		_build_pick.set_item_metadata(_build_pick.item_count - 1, space_i)
+		if space_i == player.position:
+			select_at = _build_pick.item_count - 1
+	if _build_pick.item_count > 0:
+		_build_pick.select(select_at)
+
+
+func _sync_tour_list(phase: String) -> void:
+	if phase != DistrictSim.PHASE_TOUR:
+		_tour_ready = false
+		return
+	if _tour_ready:
+		return
+	_tour_pick.clear()
+	var config := _sim.get_config()
+	for i in config.space_count():
+		_tour_pick.add_item(config.space_at(i).name)
+		_tour_pick.set_item_metadata(i, i)
+	_tour_ready = true
+
+
+func _sync_gadgets(phase: String, human: bool) -> void:
+	var player := _sim.get_player(_sim.get_current_player())
+	var usable := human and not _busy and (phase == DistrictSim.PHASE_ROLL or phase == DistrictSim.PHASE_MANAGE)
+	usable = usable and _sim.get_gadget_uses_left(_sim.get_current_player()) > 0
+	for button in _gadgets.get_children():
+		var gadget_id := str(button.get_meta("gadget_id"))
+		var count := int(player.gadgets.get(gadget_id, 0))
+		var gadget_button := button as Button
+		if gadget_button == null:
+			continue
+		gadget_button.text = "%s %d" % [str(GADGET_NAMES.get(gadget_id, gadget_id)), count]
+		gadget_button.visible = true
+		gadget_button.disabled = not (usable and count > 0)
+
+
+func _bot_count() -> int:
+	var n := 0
+	for i in _sim.get_player_count():
+		if _sim.get_player(i).is_bot:
+			n += 1
+	return n
+
+
+func _human_turn() -> bool:
+	var player := _sim.get_player(_sim.get_current_player())
+	return not player.is_bot and not player.bankrupt
+
+
+func _seat(player_id: int) -> String:
+	if player_id < 0 or player_id >= _sim.get_player_count():
+		return "P?"
+	if _sim.get_player(player_id).is_bot:
+		return "Bot" if _bot_count() <= 1 else "Bot %d" % (player_id + 1)
+	return "P%d" % (player_id + 1)
+
+
+func _space_name(index: int) -> String:
+	if index < 0 or index >= _sim.get_config().space_count():
+		return "space"
+	return _sim.get_config().space_at(index).name
+
+
+func _pawn_color(player_id: int) -> Color:
+	return Board3D.PAWN_COLORS[player_id % Board3D.PAWN_COLORS.size()]
+
+
+func _as_dict(value: Variant) -> Dictionary:
+	if value is Dictionary:
+		return value
+	return {}
+
+
+func _read_stake(host: Node) -> int:
+	if host == null:
+		return 1
+	if "match_table_stake" in host:
+		return maxi(int(host.get("match_table_stake")), 1)
+	if host.has_meta("table_stake"):
+		return maxi(int(host.get_meta("table_stake")), 1)
+	return 1
 
 
 func _find_host() -> Node:

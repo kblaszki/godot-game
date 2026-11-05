@@ -47,4 +47,6 @@ stateDiagram-v2
   manage --> over: winner
 ```
 
-Turn loop lives in `DistrictSim`. After movement resolution the seat often enters `manage` (build / gadgets / trade) before `end_manage` advances — doubles return to `roll`. Play queues sim events through Tweens before unlocking input; bots call `bot_act` only when idle. Online is stubbed via `MatchSession` + `LocalHotseatPort`.
+Turn loop lives in `DistrictSim`. After movement resolution the seat often enters `manage` (build / gadgets / trade) before `end_manage` advances — doubles return to `roll`. Play queues sim events through Tweens before unlocking input; bots call `bot_act` only when idle. Auction, tour, arena, and chance events are logged or animated in that same queue, so a bot turn cannot sit forever on an unhandled type. Chance for a human seat also auto-calls `resolve_chance` if Draw is not pressed. Online is stubbed via `MatchSession` + `LocalHotseatPort`.
+
+The table view is a 3D `Board3D` inside the play SubViewport. Corner cards and the bottom action dock call sim methods; they do not decide rent, ownership, or phase changes.

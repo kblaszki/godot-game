@@ -15,7 +15,7 @@ related_docs:
   - how-to/add-a-game.md
   - tutorials/create_new_game.md
 keywords: [index, diataxis, map]
-last_reviewed: 2026-11-04
+last_reviewed: 2026-11-05
 ---
 
 # Documentation map
@@ -61,4 +61,4 @@ Cross-game and engine docs for the **godot-game** lab (Godot 4.x, typed GDScript
 | [pong](../games/pong/docs/index.md) | `PongSim` rally plus menu, play, pause; Quit returns to lab |
 | [snake](../games/snake/docs/index.md) | `SnakeSim` grid snake plus menu, play, pause; Quit returns to lab |
 | [breakout / Shatter](../games/breakout/docs/index.md) | Neon `BreakoutSim` brick-breaker (Shatter UI) |
-| [districts](../games/districts/docs/index.md) | Property-circuit hotseat 2–4 with bots (iso board) |
+| [districts](../games/districts/docs/index.md) | Property-circuit hotseat 2–4 with bots (3D board, corner HUD) |

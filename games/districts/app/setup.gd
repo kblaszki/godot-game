@@ -16,6 +16,7 @@ var _bot_flags: Array[bool] = [false, true, true, true]
 @onready var _minus: Button = $Center/Panel/Margin/Column/CountRow/Minus
 @onready var _plus: Button = $Center/Panel/Margin/Column/CountRow/Plus
 @onready var _seats: VBoxContainer = $Center/Panel/Margin/Column/Seats
+@onready var _stake: SpinBox = $Center/Panel/Margin/Column/StakeRow/Stake
 @onready var _start: Button = $Center/Panel/Margin/Column/Start
 @onready var _quit: Button = $Center/Panel/Margin/Column/Quit
 
@@ -133,10 +134,19 @@ func _bot_mask() -> int:
 	return mask
 
 
+func _table_stake() -> int:
+	return maxi(int(_stake.value), 1)
+
+
 func _on_start() -> void:
 	var host := _find_host()
-	if host != null and host.has_method("configure_match"):
-		host.call("configure_match", _player_count, _bot_mask(), 1)
+	var stake := _table_stake()
+	if host != null:
+		host.set_meta("table_stake", stake)
+		if "match_table_stake" in host:
+			host.set("match_table_stake", stake)
+		if host.has_method("configure_match"):
+			host.call("configure_match", _player_count, _bot_mask(), 1, stake)
 	_submit(SceneRequest.replace(PLAY_PATH))
 
 
