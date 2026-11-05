@@ -4,9 +4,12 @@ const SETUP_PATH := "res://games/districts/app/setup.tscn"
 const PAUSE_PATH := "res://games/districts/app/pause_menu.tscn"
 const ZOOM_MIN := 0.35
 const ZOOM_MAX := 2.4
-const PAD := 72.0
-const STEP_SEC := 0.07
-const TILE_HALF := Vector2(96, 56)
+const PAD := 88.0
+const STEP_SEC := 0.16
+const TILE_HALF := Vector2(110, 110)
+const FOLLOW_POS_RATE := 2.6
+const FOLLOW_ROT_RATE := 2.2
+const ORBIT_SENS := 0.006
 
 const MEEPLE_PATHS: Array[String] = [
 	"res://games/districts/assets/kenney_boardgame/pieces/meeple_red.png",
@@ -29,10 +32,13 @@ var _board_rect: Rect2 = Rect2()
 var _log_lines: PackedStringArray = PackedStringArray()
 var _bot_cooldown: float = 0.0
 var _pulse: float = 0.0
-var _dragging: bool = false
+var _panning: bool = false
+var _orbiting: bool = false
 var _drag_last: Vector2 = Vector2.ZERO
 var _follow_t: float = 0.0
 var _follow_target: Vector2 = Vector2.ZERO
+var _follow_rot_target: float = 0.0
+var _auto_orient: bool = true
 var _busy: bool = false
 var _cash_cache: Array[int] = []
 var _banner_shown: bool = false
@@ -162,9 +168,14 @@ func _style_button(btn: Button, color: Color, emphasize: bool) -> void:
 func _process(delta: float) -> void:
 	_pulse += delta
 	_highlight_current_tile()
+	_keep_pawns_upright()
 	if _follow_t > 0.0:
 		_follow_t = maxf(0.0, _follow_t - delta)
-		_camera.position = _camera.position.lerp(_follow_target, 1.0 - exp(-7.0 * delta))
+		var pos_t := 1.0 - exp(-FOLLOW_POS_RATE * delta)
+		_camera.position = _camera.position.lerp(_follow_target, pos_t)
+		if _auto_orient:
+			var rot_t := 1.0 - exp(-FOLLOW_ROT_RATE * delta)
+			_camera.rotation = lerp_angle(_camera.rotation, _follow_rot_target, rot_t)
 	if _busy or _sim.get_phase() == DistrictSim.PHASE_OVER:
 		return
 	var player := _sim.get_player(_sim.get_current_player())
@@ -173,7 +184,7 @@ func _process(delta: float) -> void:
 	_bot_cooldown -= delta
 	if _bot_cooldown > 0.0:
 		return
-	_bot_cooldown = 0.35
+	_bot_cooldown = 0.45
 	_run_action(func() -> Array: return _sim.bot_act())
 
 
@@ -192,10 +203,20 @@ func _unhandled_input(event: InputEvent) -> void:
 func _on_board_gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton:
 		var mb := event as InputEventMouseButton
-		if mb.button_index == MOUSE_BUTTON_LEFT or mb.button_index == MOUSE_BUTTON_MIDDLE:
-			_dragging = mb.pressed
+		if mb.button_index == MOUSE_BUTTON_LEFT:
+			_orbiting = mb.pressed
+			_panning = false
 			_drag_last = mb.position
-			_follow_t = 0.0
+			if mb.pressed:
+				_follow_t = 0.0
+				_auto_orient = false
+			_svc.accept_event()
+		elif mb.button_index == MOUSE_BUTTON_MIDDLE:
+			_panning = mb.pressed
+			_orbiting = false
+			_drag_last = mb.position
+			if mb.pressed:
+				_follow_t = 0.0
 			_svc.accept_event()
 		elif mb.pressed and mb.button_index == MOUSE_BUTTON_WHEEL_UP:
 			_zoom_at(mb.position, 1.12)
@@ -203,12 +224,20 @@ func _on_board_gui_input(event: InputEvent) -> void:
 		elif mb.pressed and mb.button_index == MOUSE_BUTTON_WHEEL_DOWN:
 			_zoom_at(mb.position, 1.0 / 1.12)
 			_svc.accept_event()
-	elif event is InputEventMouseMotion and _dragging:
+	elif event is InputEventMouseMotion:
 		var mm := event as InputEventMouseMotion
 		var delta := mm.position - _drag_last
 		_drag_last = mm.position
-		_camera.position -= delta / _camera.zoom
-		_svc.accept_event()
+		if _orbiting:
+			_camera.rotation += delta.x * ORBIT_SENS
+			_svc.accept_event()
+		elif _panning:
+			_camera.position -= _screen_delta_to_world(delta)
+			_svc.accept_event()
+
+
+func _screen_delta_to_world(screen_delta: Vector2) -> Vector2:
+	return screen_delta.rotated(_camera.rotation) / _camera.zoom.x
 
 
 func _zoom_at(screen_pos: Vector2, factor: float) -> void:
@@ -217,9 +246,9 @@ func _zoom_at(screen_pos: Vector2, factor: float) -> void:
 	if is_equal_approx(new_zoom, old_zoom):
 		return
 	var local := screen_pos - _svc.size * 0.5
-	var world_under := _camera.position + local / old_zoom
+	var world_under := _camera.position + local.rotated(_camera.rotation) / old_zoom
 	_camera.zoom = Vector2(new_zoom, new_zoom)
-	_camera.position = world_under - local / new_zoom
+	_camera.position = world_under - local.rotated(_camera.rotation) / new_zoom
 	_follow_t = 0.0
 
 
@@ -236,10 +265,13 @@ func _fit_camera() -> void:
 	var view := _view_size()
 	var target := _board_rect.grow(PAD)
 	var z := clampf(minf(view.x / target.size.x, view.y / target.size.y), ZOOM_MIN, ZOOM_MAX)
-	var tw := create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
-	tw.tween_property(_camera, "zoom", Vector2(z, z), 0.28)
-	tw.parallel().tween_property(_camera, "position", target.get_center(), 0.28)
+	_auto_orient = true
+	_follow_rot_target = 0.0
 	_follow_t = 0.0
+	var tw := create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
+	tw.tween_property(_camera, "zoom", Vector2(z, z), 0.45)
+	tw.parallel().tween_property(_camera, "position", target.get_center(), 0.45)
+	tw.parallel().tween_property(_camera, "rotation", 0.0, 0.45)
 
 
 func _on_roll() -> void:
@@ -373,23 +405,33 @@ func _animate_pawn_path(player_id: int, from_i: int, to_i: int, steps: int) -> v
 	var pawn := _pawn_nodes[player_id]
 	var count := _sim.get_config().space_count()
 	var cur := from_i
+	_auto_orient = true
 	for _s in maxi(steps, 1):
 		cur = (cur + 1) % count
 		var target := _tile_centers[cur] + _pawn_offset(player_id)
-		_follow_target = _tile_centers[cur]
-		_follow_t = 0.35
+		_set_follow_space(cur)
 		var hop := create_tween()
-		hop.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-		hop.tween_property(pawn, "position", target + Vector2(0, -10), STEP_SEC * 0.55)
-		hop.tween_property(pawn, "position", target, STEP_SEC * 0.45)
+		hop.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+		hop.tween_property(pawn, "position", target + Vector2(0, -14), STEP_SEC * 0.5)
+		hop.tween_property(pawn, "position", target, STEP_SEC * 0.5)
 		await hop.finished
 		if cur < _tile_sprites.size():
 			var flash := create_tween()
-			flash.tween_property(_tile_sprites[cur], "modulate", Color(1.3, 1.3, 1.15, 1), 0.05)
-			flash.tween_property(_tile_sprites[cur], "modulate", Color.WHITE, 0.12)
-	# Ensure final sim position
+			flash.tween_property(_tile_sprites[cur], "modulate", Color(1.3, 1.3, 1.15, 1), 0.08)
+			flash.tween_property(_tile_sprites[cur], "modulate", Color.WHITE, 0.18)
 	pawn.position = _tile_centers[to_i] + _pawn_offset(player_id)
+	_set_follow_space(to_i)
 	_update_space_chip(to_i)
+
+
+func _set_follow_space(space_i: int) -> void:
+	if space_i < 0 or space_i >= _tile_centers.size():
+		return
+	_follow_target = _tile_centers[space_i]
+	# Rotate view so this side's labels read upright (Monopoly edge facing the viewer).
+	_follow_rot_target = -_space_tile_rotation(space_i)
+	_follow_t = 0.85
+	_auto_orient = true
 
 
 func _pop_tile(space_i: int, tint: Color) -> void:
@@ -471,8 +513,7 @@ func _snap_pawn(player_id: int, space_i: int) -> void:
 	if space_i < 0 or space_i >= _tile_centers.size():
 		return
 	_pawn_nodes[player_id].position = _tile_centers[space_i] + _pawn_offset(player_id)
-	_follow_target = _tile_centers[space_i]
-	_follow_t = 0.4
+	_set_follow_space(space_i)
 	_update_space_chip(space_i)
 
 
@@ -502,12 +543,14 @@ func _build_board() -> void:
 		sprite.texture = DistrictTileBaker.bake(space)
 		sprite.centered = true
 		sprite.position = center
+		sprite.rotation = _space_tile_rotation(i)
 		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 		var pip := Polygon2D.new()
 		pip.polygon = PackedVector2Array([
 			Vector2(-5, 0), Vector2(0, -5), Vector2(5, 0), Vector2(0, 5),
 		])
-		pip.position = Vector2(34, 18)
+		# Toward board center relative to the tile's local "up" (color band).
+		pip.position = Vector2(0, 28)
 		pip.visible = false
 		pip.z_index = 2
 		sprite.add_child(pip)
@@ -545,6 +588,31 @@ func _build_pawns() -> void:
 
 func _pawn_offset(player_id: int) -> Vector2:
 	return Vector2(float(player_id) * 14.0 - 21.0, -30.0 - float(player_id % 2) * 10.0)
+
+
+func _keep_pawns_upright() -> void:
+	var counter := -_camera.rotation
+	for pawn in _pawn_nodes:
+		pawn.rotation = counter
+
+
+func _space_side(index: int) -> int:
+	var per_side := maxi(_sim.get_config().space_count() / 4, 1)
+	return clampi(int(index / per_side), 0, 3)
+
+
+func _space_tile_rotation(index: int) -> float:
+	## Monopoly-style: color band / title face the board center on each edge.
+	match _space_side(index):
+		0:
+			return 0.0
+		1:
+			return PI * 0.5
+		2:
+			return PI
+		3:
+			return -PI * 0.5
+	return 0.0
 
 
 func _iso_ring_centers(count: int) -> Array[Vector2]:

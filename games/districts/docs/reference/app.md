@@ -38,11 +38,11 @@ Host stores `match_players`, `match_bot_mask`, `match_seed` for play. Esc opens 
 - Tax / GO / Jail / Free / Goto Jail: distinct face colors, simple icons, title + money where relevant
 - Headless-safe pure `Image` bake (bitmap labels; no GPU viewport)
 
-Play spaces the ring at iso step **(86, 48)** and uses **linear** filtering on tile sprites. Ownership uses a colored **pip** on the tile (not a full modulate wash). `SpaceChip` remains a compact summary above the board.
+Play spaces the ring at iso step **(86, 48)** and uses **linear** filtering on tile sprites. Each edge is rotated Monopoly-style (color band toward the center — tiles are not all aimed at the viewer). Ownership uses a colored **pip** on the tile. `SpaceChip` remains a compact summary above the board.
 
 ## Camera
 
-Board lives in a `SubViewport`. **Fit board** tweens zoom/position to the ring. Drag pans; mouse wheel zooms. Soft follow after pawn hops.
+Board lives in a `SubViewport`. **Fit board** tweens zoom, position, and rotation back to the full ring. **LMB drag** orbits (rotates) the view so edge labels can be read; **MMB drag** pans; mouse wheel zooms. During pawn hops the camera slowly follows position and eases rotation so the occupied edge reads upright; meeples counter-rotate to stay upright on screen.
 
 ## Juice
 
