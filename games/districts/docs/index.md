@@ -24,7 +24,7 @@ Original property-circuit board game (genre inspiration only — not Monopoly IP
 
 | Doc | Purpose |
 |-----|---------|
-| [sim.md](reference/sim.md) | Board, turns, bots |
+| [sim.md](reference/sim.md) | 32-space board, phases, chance, gadgets, auction, trade, net stubs |
 | [app.md](reference/app.md) | Setup, play HUD, iso board |
 
 ## Explanation

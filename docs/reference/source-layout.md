@@ -58,7 +58,7 @@ Inventory of the lab tree. Update this page when paths are added, removed, or re
 | pong | `pong_config.gd`, `pong_sim.gd` | host extends LayeredHost + menu/play/pause | `games/pong/docs/` | `pong_sim_test.gd`, `pong_host_flow_test.gd` |
 | snake | `snake_config.gd`, `snake_sim.gd` | host extends LayeredHost + menu/play/pause | `games/snake/docs/` | `snake_sim_test.gd`, `snake_host_flow_test.gd` |
 | breakout | `breakout_config.gd`, `breakout_sim.gd` | host + menu/play/pause + `assets/` | `games/breakout/docs/` | `breakout_sim_test.gd`, `breakout_host_flow_test.gd` |
-| districts | board/player/config/sim/bot | host + setup/play/pause + `district_tile_baker.gd` + `assets/` (Kenney + felt) | `games/districts/docs/` | `district_sim_test.gd`, `district_host_flow_test.gd`, `district_tile_baker_test.gd` |
+| districts | board/player/config/sim/bot/chance/gadgets/network stubs | host + setup/play/pause + baker + optional `board_3d` + `assets/` | `games/districts/docs/` | `district_sim_test.gd`, `district_host_flow_test.gd`, `district_tile_baker_test.gd` |
 
 ## Engine modules
 

@@ -75,7 +75,8 @@ static func is_corner_kind(kind: String) -> bool:
 		kind == BoardSpace.KIND_GO
 		or kind == BoardSpace.KIND_JAIL
 		or kind == BoardSpace.KIND_FREE
-		or kind == BoardSpace.KIND_GOTO_JAIL
+		or kind == BoardSpace.KIND_TOUR
+		or kind == BoardSpace.KIND_ARENA
 	)
 
 
@@ -141,6 +142,14 @@ static func _bake_corner(space: BoardSpace) -> Image:
 			_draw_tree(image, center + Vector2(0, -16), Color(0.18, 0.48, 0.4, 1))
 			_draw_wrapped(image, space.name, center + Vector2(0, 12), float(s - 16), 2, Color(0.12, 0.32, 0.3, 1))
 			_draw_centered(image, "FREE", center + Vector2(0, 36), 2, Color(0.16, 0.4, 0.36, 1))
+		BoardSpace.KIND_TOUR:
+			_draw_point(image, center + Vector2(0, -16), Color(0.25, 0.55, 0.85, 1))
+			_draw_wrapped(image, space.name, center + Vector2(0, 12), float(s - 16), 2, Color(0.15, 0.35, 0.55, 1))
+			_draw_centered(image, "TOUR", center + Vector2(0, 36), 2, Color(0.2, 0.45, 0.7, 1))
+		BoardSpace.KIND_ARENA:
+			_draw_coin(image, center + Vector2(0, -16))
+			_draw_wrapped(image, space.name, center + Vector2(0, 12), float(s - 16), 2, Color(0.5, 0.35, 0.1, 1))
+			_draw_centered(image, "ARENA", center + Vector2(0, 36), 2, Color(0.7, 0.5, 0.15, 1))
 	return image
 
 
@@ -148,6 +157,10 @@ static func _special_band(space: BoardSpace) -> Color:
 	match space.kind:
 		BoardSpace.KIND_TAX:
 			return Color(0.85, 0.7, 0.35, 1)
+		BoardSpace.KIND_CHANCE:
+			return Color(0.55, 0.35, 0.75, 1)
+		BoardSpace.KIND_GOTO_JAIL:
+			return Color(0.75, 0.3, 0.28, 1)
 	return Color(0.55, 0.6, 0.65, 1)
 
 
@@ -165,6 +178,12 @@ static func _face_color(space: BoardSpace) -> Color:
 			return Color(0.92, 0.72, 0.78, 1)
 		BoardSpace.KIND_FREE:
 			return Color(0.72, 0.88, 0.9, 1)
+		BoardSpace.KIND_TOUR:
+			return Color(0.7, 0.85, 0.95, 1)
+		BoardSpace.KIND_ARENA:
+			return Color(0.95, 0.88, 0.7, 1)
+		BoardSpace.KIND_CHANCE:
+			return Color(0.9, 0.85, 0.95, 1)
 	return Color(0.92, 0.92, 0.94, 1)
 
 
