@@ -1,12 +1,15 @@
 class_name DistrictTileBaker
 extends RefCounted
 
-## Bakes Monopoly-style iso diamond faces as ImageTextures (no scene tree / GPU).
+## Bakes rectangular Monopoly-style space faces (color band on the outer edge).
 
-const WIDTH := 192
+const WIDTH := 80
 const HEIGHT := 112
-const HALF_W := 88.0
-const HALF_H := 48.0
+const CORNER_SIZE := 112
+const BAND_H := 26
+## Kept for play layout spacing (edge tile half-extents).
+const HALF_W := 40.0
+const HALF_H := 56.0
 
 const GROUP_COLORS: Array[Color] = [
 	Color(0.55, 0.32, 0.18, 1),
@@ -18,7 +21,6 @@ const GROUP_COLORS: Array[Color] = [
 	Color(0.28, 0.68, 0.38, 1),
 ]
 
-# Classic 5x7 bitmap font: each glyph is 7 row masks (bit4 = left pixel).
 const _GLYPH_W := 5
 const _GLYPH_H := 7
 const _GLYPHS := {
@@ -68,58 +70,23 @@ const _GLYPHS := {
 }
 
 
+static func is_corner_kind(kind: String) -> bool:
+	return (
+		kind == BoardSpace.KIND_GO
+		or kind == BoardSpace.KIND_JAIL
+		or kind == BoardSpace.KIND_FREE
+		or kind == BoardSpace.KIND_GOTO_JAIL
+	)
+
+
 static func bake(space: BoardSpace) -> ImageTexture:
 	return ImageTexture.create_from_image(bake_image(space))
 
 
 static func bake_image(space: BoardSpace) -> Image:
-	var image := Image.create(WIDTH, HEIGHT, false, Image.FORMAT_RGBA8)
-	image.fill(Color(0, 0, 0, 0))
-	var center := Vector2(WIDTH * 0.5, HEIGHT * 0.5)
-	_fill_diamond(image, center + Vector2(3, 5), HALF_W, HALF_H, Color(0, 0, 0, 0.35))
-	_fill_diamond(image, center, HALF_W, HALF_H, _face_color(space))
-	match space.kind:
-		BoardSpace.KIND_PROPERTY:
-			_fill_diamond_band(image, center, HALF_W, HALF_H, 0.0, 0.34, group_color(space.group))
-			_stroke_diamond(image, center, HALF_W, HALF_H, Color(0.08, 0.09, 0.11, 1), 2)
-			_bevel_diamond(image, center, HALF_W, HALF_H)
-			_draw_wrapped(image, space.name, center + Vector2(0, 2), 110.0, 2, Color(0.14, 0.15, 0.18, 1))
-			_draw_centered(image, "$%d" % space.price, center + Vector2(0, 22), 2, Color(0.12, 0.35, 0.28, 1))
-			_draw_centered(image, "rent $%d" % space.rent, center + Vector2(0, 36), 1, Color(0.35, 0.38, 0.42, 1))
-		BoardSpace.KIND_TAX:
-			_stroke_diamond(image, center, HALF_W, HALF_H, Color(0.08, 0.09, 0.11, 1), 2)
-			_bevel_diamond(image, center, HALF_W, HALF_H)
-			_draw_coin(image, center + Vector2(0, -18))
-			_draw_wrapped(image, space.name, center + Vector2(0, 4), 108.0, 2, Color(0.28, 0.2, 0.1, 1))
-			_draw_centered(image, "tax $%d" % space.tax, center + Vector2(0, 28), 2, Color(0.55, 0.28, 0.12, 1))
-		BoardSpace.KIND_GO:
-			_stroke_diamond(image, center, HALF_W, HALF_H, Color(0.08, 0.09, 0.11, 1), 2)
-			_bevel_diamond(image, center, HALF_W, HALF_H)
-			_draw_arrow(image, center + Vector2(0, -16), Color(0.15, 0.45, 0.3, 1))
-			_draw_wrapped(image, space.name, center + Vector2(0, 8), 110.0, 2, Color(0.1, 0.28, 0.18, 1))
-			_draw_centered(image, "GO", center + Vector2(0, 28), 2, Color(0.12, 0.4, 0.25, 1))
-		BoardSpace.KIND_JAIL:
-			_stroke_diamond(image, center, HALF_W, HALF_H, Color(0.08, 0.09, 0.11, 1), 2)
-			_bevel_diamond(image, center, HALF_W, HALF_H)
-			_draw_bars(image, center + Vector2(0, -16), Color(0.25, 0.28, 0.38, 1))
-			_draw_wrapped(image, space.name, center + Vector2(0, 8), 108.0, 2, Color(0.18, 0.2, 0.28, 1))
-			_draw_centered(image, "JAIL", center + Vector2(0, 28), 2, Color(0.3, 0.32, 0.4, 1))
-		BoardSpace.KIND_GOTO_JAIL:
-			_stroke_diamond(image, center, HALF_W, HALF_H, Color(0.08, 0.09, 0.11, 1), 2)
-			_bevel_diamond(image, center, HALF_W, HALF_H)
-			_draw_point(image, center + Vector2(0, -16), Color(0.55, 0.18, 0.16, 1))
-			_draw_wrapped(image, space.name, center + Vector2(0, 8), 108.0, 2, Color(0.4, 0.14, 0.12, 1))
-			_draw_centered(image, "GO TO JAIL", center + Vector2(0, 28), 1, Color(0.5, 0.16, 0.14, 1))
-		BoardSpace.KIND_FREE:
-			_stroke_diamond(image, center, HALF_W, HALF_H, Color(0.08, 0.09, 0.11, 1), 2)
-			_bevel_diamond(image, center, HALF_W, HALF_H)
-			_draw_tree(image, center + Vector2(0, -16), Color(0.18, 0.48, 0.4, 1))
-			_draw_wrapped(image, space.name, center + Vector2(0, 8), 108.0, 2, Color(0.12, 0.32, 0.3, 1))
-			_draw_centered(image, "FREE", center + Vector2(0, 28), 2, Color(0.16, 0.4, 0.36, 1))
-		_:
-			_stroke_diamond(image, center, HALF_W, HALF_H, Color(0.08, 0.09, 0.11, 1), 2)
-			_draw_centered(image, space.name, center, 2, Color(0.15, 0.16, 0.18, 1))
-	return image
+	if is_corner_kind(space.kind):
+		return _bake_corner(space)
+	return _bake_edge(space)
 
 
 static func group_color(group: int) -> Color:
@@ -128,97 +95,102 @@ static func group_color(group: int) -> Color:
 	return GROUP_COLORS[group]
 
 
+static func _bake_edge(space: BoardSpace) -> Image:
+	var image := Image.create(WIDTH, HEIGHT, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0, 0, 0, 0))
+	_fill_rect(image, Rect2i(1, 1, WIDTH - 2, HEIGHT - 2), _face_color(space))
+	# Outer color band at top of texture (play rotates so top faces outward).
+	var band := group_color(space.group) if space.kind == BoardSpace.KIND_PROPERTY else _special_band(space)
+	_fill_rect(image, Rect2i(1, 1, WIDTH - 2, BAND_H), band)
+	_stroke_rect(image, Rect2i(0, 0, WIDTH, HEIGHT), Color(0.08, 0.09, 0.11, 1), 2)
+	var ink := Color(0.14, 0.15, 0.18, 1)
+	match space.kind:
+		BoardSpace.KIND_PROPERTY:
+			_draw_wrapped(image, space.name, Vector2(WIDTH * 0.5, BAND_H + 28), float(WIDTH - 12), 2, ink)
+			_draw_centered(image, "$%d" % space.price, Vector2(WIDTH * 0.5, HEIGHT - 28), 2, Color(0.12, 0.35, 0.28, 1))
+		BoardSpace.KIND_TAX:
+			_draw_coin(image, Vector2(WIDTH * 0.5, BAND_H + 22))
+			_draw_wrapped(image, space.name, Vector2(WIDTH * 0.5, BAND_H + 48), float(WIDTH - 12), 1, ink)
+			_draw_centered(image, "$%d" % space.tax, Vector2(WIDTH * 0.5, HEIGHT - 24), 2, Color(0.55, 0.28, 0.12, 1))
+		_:
+			_draw_wrapped(image, space.name, Vector2(WIDTH * 0.5, HEIGHT * 0.55), float(WIDTH - 12), 2, ink)
+	return image
+
+
+static func _bake_corner(space: BoardSpace) -> Image:
+	var s := CORNER_SIZE
+	var image := Image.create(s, s, false, Image.FORMAT_RGBA8)
+	image.fill(Color(0, 0, 0, 0))
+	_fill_rect(image, Rect2i(1, 1, s - 2, s - 2), _face_color(space))
+	_stroke_rect(image, Rect2i(0, 0, s, s), Color(0.08, 0.09, 0.11, 1), 2)
+	var center := Vector2(s * 0.5, s * 0.5)
+	match space.kind:
+		BoardSpace.KIND_GO:
+			_draw_arrow(image, center + Vector2(0, -18), Color(0.15, 0.45, 0.3, 1))
+			_draw_wrapped(image, space.name, center + Vector2(0, 10), float(s - 16), 2, Color(0.1, 0.28, 0.18, 1))
+			_draw_centered(image, "GO", center + Vector2(0, 36), 2, Color(0.12, 0.4, 0.25, 1))
+		BoardSpace.KIND_JAIL:
+			_draw_bars(image, center + Vector2(0, -16), Color(0.25, 0.28, 0.38, 1))
+			_draw_wrapped(image, space.name, center + Vector2(0, 12), float(s - 16), 2, Color(0.18, 0.2, 0.28, 1))
+			_draw_centered(image, "JAIL", center + Vector2(0, 36), 2, Color(0.3, 0.32, 0.4, 1))
+		BoardSpace.KIND_GOTO_JAIL:
+			_draw_point(image, center + Vector2(0, -16), Color(0.55, 0.18, 0.16, 1))
+			_draw_wrapped(image, space.name, center + Vector2(0, 12), float(s - 16), 2, Color(0.4, 0.14, 0.12, 1))
+			_draw_centered(image, "GO TO JAIL", center + Vector2(0, 36), 1, Color(0.5, 0.16, 0.14, 1))
+		BoardSpace.KIND_FREE:
+			_draw_tree(image, center + Vector2(0, -16), Color(0.18, 0.48, 0.4, 1))
+			_draw_wrapped(image, space.name, center + Vector2(0, 12), float(s - 16), 2, Color(0.12, 0.32, 0.3, 1))
+			_draw_centered(image, "FREE", center + Vector2(0, 36), 2, Color(0.16, 0.4, 0.36, 1))
+	return image
+
+
+static func _special_band(space: BoardSpace) -> Color:
+	match space.kind:
+		BoardSpace.KIND_TAX:
+			return Color(0.85, 0.7, 0.35, 1)
+	return Color(0.55, 0.6, 0.65, 1)
+
+
 static func _face_color(space: BoardSpace) -> Color:
 	match space.kind:
 		BoardSpace.KIND_PROPERTY:
-			return Color(0.93, 0.91, 0.84, 1)
+			return Color(0.96, 0.95, 0.9, 1)
 		BoardSpace.KIND_TAX:
-			return Color(0.94, 0.88, 0.72, 1)
+			return Color(0.95, 0.9, 0.78, 1)
 		BoardSpace.KIND_GO:
 			return Color(0.72, 0.9, 0.78, 1)
 		BoardSpace.KIND_JAIL:
 			return Color(0.78, 0.8, 0.86, 1)
 		BoardSpace.KIND_GOTO_JAIL:
-			return Color(0.9, 0.72, 0.7, 1)
+			return Color(0.92, 0.72, 0.78, 1)
 		BoardSpace.KIND_FREE:
-			return Color(0.72, 0.88, 0.86, 1)
-	return Color(0.88, 0.88, 0.9, 1)
+			return Color(0.72, 0.88, 0.9, 1)
+	return Color(0.92, 0.92, 0.94, 1)
 
 
-static func _point_in_diamond(p: Vector2, center: Vector2, half_w: float, half_h: float) -> bool:
-	var local := p - center
-	return (absf(local.x) / half_w) + (absf(local.y) / half_h) <= 1.0
+static func _fill_rect(image: Image, rect: Rect2i, color: Color) -> void:
+	var x0 := maxi(rect.position.x, 0)
+	var y0 := maxi(rect.position.y, 0)
+	var x1 := mini(rect.position.x + rect.size.x, image.get_width())
+	var y1 := mini(rect.position.y + rect.size.y, image.get_height())
+	for y in range(y0, y1):
+		for x in range(x0, x1):
+			image.set_pixel(x, y, color)
 
 
-static func _fill_diamond(image: Image, center: Vector2, half_w: float, half_h: float, color: Color) -> void:
-	var min_x := int(floor(center.x - half_w))
-	var max_x := int(ceil(center.x + half_w))
-	var min_y := int(floor(center.y - half_h))
-	var max_y := int(ceil(center.y + half_h))
-	for y in range(maxi(0, min_y), mini(HEIGHT, max_y + 1)):
-		for x in range(maxi(0, min_x), mini(WIDTH, max_x + 1)):
-			if _point_in_diamond(Vector2(x + 0.5, y + 0.5), center, half_w, half_h):
-				_blend_pixel(image, x, y, color)
-
-
-static func _fill_diamond_band(
-	image: Image,
-	center: Vector2,
-	half_w: float,
-	half_h: float,
-	t0: float,
-	t1: float,
-	color: Color
-) -> void:
-	var min_x := int(floor(center.x - half_w))
-	var max_x := int(ceil(center.x + half_w))
-	var min_y := int(floor(center.y - half_h))
-	var max_y := int(ceil(center.y + half_h))
-	for y in range(maxi(0, min_y), mini(HEIGHT, max_y + 1)):
-		for x in range(maxi(0, min_x), mini(WIDTH, max_x + 1)):
-			var p := Vector2(x + 0.5, y + 0.5)
-			if not _point_in_diamond(p, center, half_w, half_h):
-				continue
-			var t := ((p.y - (center.y - half_h)) / (half_h * 2.0))
-			if t >= t0 and t <= t1:
-				_blend_pixel(image, x, y, color)
-
-
-static func _stroke_diamond(image: Image, center: Vector2, half_w: float, half_h: float, color: Color, thickness: int) -> void:
-	var pts := PackedVector2Array([
-		center + Vector2(0, -half_h),
-		center + Vector2(half_w, 0),
-		center + Vector2(0, half_h),
-		center + Vector2(-half_w, 0),
-	])
-	for i in pts.size():
-		_draw_line(image, pts[i], pts[(i + 1) % pts.size()], color, thickness)
-
-
-static func _bevel_diamond(image: Image, center: Vector2, half_w: float, half_h: float) -> void:
-	var pts := PackedVector2Array([
-		center + Vector2(0, -(half_h - 2.0)),
-		center + Vector2(half_w - 3.0, 0),
-		center + Vector2(0, half_h - 2.0),
-		center + Vector2(-(half_w - 3.0), 0),
-	])
-	_draw_line(image, pts[0], pts[1], Color(1, 1, 1, 0.28), 1)
-	_draw_line(image, pts[3], pts[0], Color(1, 1, 1, 0.18), 1)
-	_draw_line(image, pts[1], pts[2], Color(0, 0, 0, 0.18), 1)
-	_draw_line(image, pts[2], pts[3], Color(0, 0, 0, 0.22), 1)
-
-
-static func _draw_line(image: Image, a: Vector2, b: Vector2, color: Color, thickness: int) -> void:
-	var steps := int(maxi(1, ceili(a.distance_to(b))))
-	for i in steps + 1:
-		var p := a.lerp(b, float(i) / float(steps))
-		for oy in range(-thickness + 1, thickness):
-			for ox in range(-thickness + 1, thickness):
-				_blend_pixel(image, int(round(p.x)) + ox, int(round(p.y)) + oy, color)
+static func _stroke_rect(image: Image, rect: Rect2i, color: Color, thickness: int) -> void:
+	for t in thickness:
+		var r := Rect2i(rect.position.x + t, rect.position.y + t, rect.size.x - 2 * t, rect.size.y - 2 * t)
+		for x in range(r.position.x, r.position.x + r.size.x):
+			_blend_pixel(image, x, r.position.y, color)
+			_blend_pixel(image, x, r.position.y + r.size.y - 1, color)
+		for y in range(r.position.y, r.position.y + r.size.y):
+			_blend_pixel(image, r.position.x, y, color)
+			_blend_pixel(image, r.position.x + r.size.x - 1, y, color)
 
 
 static func _blend_pixel(image: Image, x: int, y: int, color: Color) -> void:
-	if x < 0 or y < 0 or x >= WIDTH or y >= HEIGHT:
+	if x < 0 or y < 0 or x >= image.get_width() or y >= image.get_height():
 		return
 	var dst := image.get_pixel(x, y)
 	var a := color.a
@@ -288,7 +260,6 @@ static func _draw_text(image: Image, text: String, origin: Vector2, scale: int, 
 		for row in _GLYPH_H:
 			var mask: int = int(rows[row])
 			for col in _GLYPH_W:
-				# bit4 is the leftmost pixel of the 5-wide glyph
 				if (mask >> (4 - col)) & 1:
 					for sy in scale:
 						for sx in scale:
@@ -296,10 +267,27 @@ static func _draw_text(image: Image, text: String, origin: Vector2, scale: int, 
 		pen_x += (_GLYPH_W + 1) * scale
 
 
+static func _draw_line(image: Image, a: Vector2, b: Vector2, color: Color, thickness: int) -> void:
+	var steps := int(maxi(1, ceili(a.distance_to(b))))
+	for i in steps + 1:
+		var p := a.lerp(b, float(i) / float(steps))
+		for oy in range(-thickness + 1, thickness):
+			for ox in range(-thickness + 1, thickness):
+				_blend_pixel(image, int(round(p.x)) + ox, int(round(p.y)) + oy, color)
+
+
+static func _fill_circle(image: Image, center: Vector2, radius: float, color: Color) -> void:
+	var r := int(ceil(radius))
+	for y in range(-r, r + 1):
+		for x in range(-r, r + 1):
+			if Vector2(x, y).length() <= radius:
+				_blend_pixel(image, int(center.x) + x, int(center.y) + y, color)
+
+
 static func _draw_coin(image: Image, center: Vector2) -> void:
 	_fill_circle(image, center, 10, Color(0.85, 0.65, 0.2, 1))
 	_fill_circle(image, center, 7, Color(0.98, 0.9, 0.45, 1))
-	_draw_centered(image, "$", center + Vector2(0, 0), 2, Color(0.45, 0.3, 0.08, 1))
+	_draw_centered(image, "$", center, 2, Color(0.45, 0.3, 0.08, 1))
 
 
 static func _draw_arrow(image: Image, center: Vector2, color: Color) -> void:
@@ -327,11 +315,3 @@ static func _draw_tree(image: Image, center: Vector2, color: Color) -> void:
 	_fill_circle(image, center + Vector2(-6, 0), 6, color.lightened(0.1))
 	_fill_circle(image, center + Vector2(6, 0), 6, color.lightened(0.1))
 	_draw_line(image, center + Vector2(0, 2), center + Vector2(0, 14), Color(0.35, 0.22, 0.12, 1), 2)
-
-
-static func _fill_circle(image: Image, center: Vector2, radius: float, color: Color) -> void:
-	var r := int(ceil(radius))
-	for y in range(-r, r + 1):
-		for x in range(-r, r + 1):
-			if Vector2(x, y).length() <= radius:
-				_blend_pixel(image, int(center.x) + x, int(center.y) + y, color)

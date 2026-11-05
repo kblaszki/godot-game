@@ -32,13 +32,13 @@ Host stores `match_players`, `match_bot_mask`, `match_seed` for play. Esc opens 
 
 ## Board tiles
 
-`DistrictTileBaker` (`games/districts/app/district_tile_baker.gd`) bakes a **192×112** iso diamond `ImageTexture` per `BoardSpace` at board build:
+`DistrictTileBaker` bakes **rectangular** Monopoly faces (edge **80×112**, corners **112×112**):
 
-- Property: group color band, name, `$price`, `rent $N`
-- Tax / GO / Jail / Free / Goto Jail: distinct face colors, simple icons, title + money where relevant
-- Headless-safe pure `Image` bake (bitmap labels; no GPU viewport)
+- Property / tax: color band on the **outer** edge, cream face, name + money
+- Corners (GO / Jail / Free / Goto Jail): square tiles with icons + title
+- Headless-safe pure `Image` bake (bitmap labels)
 
-Play spaces the ring at iso step **(HALF_W, HALF_H) = (88, 48)** so diamonds abut, with **linear** filtering. Each edge is rotated Monopoly-style (color band toward the center). A felt sprite + dark iso plate sit under the ring inside `BoardPivot`. Ownership uses a colored **pip**. `SpaceChip` remains a compact summary.
+Play lays a **square track** (corners + abutting edge rectangles), rotates `BoardPivot` by −45° for the diamond table view, and orients each side so the band faces outward (labels read from that side of the table). Felt + center plate live under the ring. Ownership uses a colored **pip**.
 
 ## Camera
 

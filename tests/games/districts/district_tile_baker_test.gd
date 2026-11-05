@@ -8,8 +8,8 @@ func test_bake_property_should_have_size_and_band_color() -> void:
 	assert_eq(image.get_height(), DistrictTileBaker.HEIGHT)
 	var center := image.get_pixel(DistrictTileBaker.WIDTH / 2, DistrictTileBaker.HEIGHT / 2)
 	assert_gt(center.a, 0.5)
-	# Band sits in the upper third of the diamond.
-	var band := image.get_pixel(DistrictTileBaker.WIDTH / 2, 28)
+	# Color band sits along the outer (top) edge.
+	var band := image.get_pixel(DistrictTileBaker.WIDTH / 2, 12)
 	var expected := DistrictTileBaker.group_color(0)
 	assert_gt(band.a, 0.5)
 	assert_lt(absf(band.r - expected.r), 0.2)
@@ -17,14 +17,13 @@ func test_bake_property_should_have_size_and_band_color() -> void:
 	assert_lt(absf(band.b - expected.b), 0.2)
 
 
-func test_bake_go_should_fill_interior() -> void:
+func test_bake_go_should_be_corner_square() -> void:
 	var space := BoardSpace.make_go("Plaza Gate")
-	var tex := DistrictTileBaker.bake(space)
-	assert_eq(tex.get_width(), DistrictTileBaker.WIDTH)
-	assert_eq(tex.get_height(), DistrictTileBaker.HEIGHT)
-	var image := tex.get_image()
-	assert_gt(image.get_pixel(DistrictTileBaker.WIDTH / 2, DistrictTileBaker.HEIGHT / 2).a, 0.5)
-	assert_lt(image.get_pixel(2, 2).a, 0.1)
+	var image := DistrictTileBaker.bake_image(space)
+	assert_eq(image.get_width(), DistrictTileBaker.CORNER_SIZE)
+	assert_eq(image.get_height(), DistrictTileBaker.CORNER_SIZE)
+	assert_gt(image.get_pixel(DistrictTileBaker.CORNER_SIZE / 2, DistrictTileBaker.CORNER_SIZE / 2).a, 0.5)
+	assert_true(DistrictTileBaker.is_corner_kind(BoardSpace.KIND_GO))
 
 
 func test_bake_tax_should_include_opaque_face() -> void:
@@ -36,10 +35,10 @@ func test_bake_tax_should_include_opaque_face() -> void:
 func test_bake_property_should_draw_ink_near_label() -> void:
 	var space := BoardSpace.make_property("Cedar Lane", 1, 100, 10)
 	var image := DistrictTileBaker.bake_image(space)
-	var face := Color(0.93, 0.91, 0.84, 1)
+	var face := Color(0.96, 0.95, 0.9, 1)
 	var found_ink := false
-	for y in range(48, 72):
-		for x in range(60, 132):
+	for y in range(40, 90):
+		for x in range(8, DistrictTileBaker.WIDTH - 8):
 			var px := image.get_pixel(x, y)
 			if px.a < 0.5:
 				continue

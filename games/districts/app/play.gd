@@ -6,12 +6,15 @@ const ZOOM_MIN := 0.35
 const ZOOM_MAX := 2.4
 const PAD := 96.0
 const STEP_SEC := 0.22
-const TILE_HALF := Vector2(96.0, 56.0)
+const EDGE_W := 80.0
+const EDGE_H := 112.0
+const CORNER := 112.0
+const TILE_HALF := Vector2(64.0, 64.0)
 const FOLLOW_POS_RATE := 2.2
 const FOLLOW_ROT_RATE := 2.0
 const ORBIT_SENS := 0.009
-const ISO_STEP_X := 88.0
-const ISO_STEP_Y := 48.0
+## Diamond presentation: square track rotated so a corner points down.
+const REST_PIVOT_ROT := -PI * 0.25
 
 const MEEPLE_PATHS: Array[String] = [
 	"res://games/districts/assets/kenney_boardgame/pieces/meeple_red.png",
@@ -272,10 +275,12 @@ func _fit_camera() -> void:
 	if _board_rect.size.x <= 1.0:
 		return
 	var view := _view_size()
+	# Axis-aligned local rect grows; diamond view needs diagonal extent.
 	var local_target := _board_rect.grow(PAD)
-	var z := clampf(minf(view.x / local_target.size.x, view.y / local_target.size.y), ZOOM_MIN, ZOOM_MAX)
+	var diag := local_target.size.length()
+	var z := clampf(minf(view.x / diag, view.y / diag) * 1.15, ZOOM_MIN, ZOOM_MAX)
 	_auto_orient = true
-	_follow_rot_target = 0.0
+	_follow_rot_target = REST_PIVOT_ROT
 	_follow_space_index = -1
 	_follow_t = 0.0
 	_camera.rotation = 0.0
@@ -283,7 +288,7 @@ func _fit_camera() -> void:
 	var tw := create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
 	tw.tween_property(_camera, "zoom", Vector2(z, z), 0.5)
 	tw.parallel().tween_property(_camera, "position", world_center, 0.5)
-	tw.parallel().tween_property(_pivot, "rotation", 0.0, 0.5)
+	tw.parallel().tween_property(_pivot, "rotation", REST_PIVOT_ROT, 0.5)
 
 
 func _on_roll() -> void:
@@ -441,8 +446,8 @@ func _set_follow_space(space_i: int) -> void:
 		return
 	_follow_space_index = space_i
 	_follow_target = _tile_world_pos(space_i)
-	# Spin the table so this Monopoly edge sits upright at the bottom of the view.
-	_follow_rot_target = -_space_tile_rotation(space_i)
+	# Spin the table so this edge's labels read upright (band outward, text inward).
+	_follow_rot_target = REST_PIVOT_ROT - _space_tile_rotation(space_i)
 	_follow_t = 1.0
 	_auto_orient = true
 
@@ -550,7 +555,7 @@ func _build_board() -> void:
 	_tile_sprites.clear()
 	_owner_pips.clear()
 
-	var absolute := _iso_ring_centers(_sim.get_config().space_count())
+	var absolute := _square_ring_centers(_sim.get_config().space_count())
 	var min_p := Vector2(INF, INF)
 	var max_p := Vector2(-INF, -INF)
 	for center in absolute:
@@ -559,7 +564,7 @@ func _build_board() -> void:
 	var abs_rect := Rect2(min_p, max_p - min_p)
 	var origin := abs_rect.get_center()
 	_pivot.position = origin
-	_pivot.rotation = 0.0
+	_pivot.rotation = REST_PIVOT_ROT
 	_camera.rotation = 0.0
 
 	_tile_centers.clear()
@@ -582,7 +587,8 @@ func _build_board() -> void:
 		pip.polygon = PackedVector2Array([
 			Vector2(-5, 0), Vector2(0, -5), Vector2(5, 0), Vector2(0, 5),
 		])
-		pip.position = Vector2(0, 28)
+		# Toward board center in local tile space (band is at texture top / outer).
+		pip.position = Vector2(0, 36)
 		pip.visible = false
 		pip.z_index = 2
 		sprite.add_child(pip)
@@ -597,7 +603,7 @@ func _setup_table_surface() -> void:
 	_table_felt.centered = true
 	_table_felt.position = Vector2.ZERO
 	_table_felt.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
-	var pad := 120.0
+	var pad := 140.0
 	var size := _board_rect.size + Vector2(pad, pad)
 	if felt_tex != null:
 		_table_felt.scale = Vector2(
@@ -606,16 +612,17 @@ func _setup_table_surface() -> void:
 		)
 	_table_felt.modulate = Color(0.75, 0.92, 0.8, 1)
 
-	# Darker iso plate under the ring (diamond matching board bounds).
-	var hw := _board_rect.size.x * 0.42
-	var hh := _board_rect.size.y * 0.42
+	# Square plate filling the hollow center of the track.
+	var inset := EDGE_H * 0.55
+	var half := _board_rect.size * 0.5 - Vector2(inset, inset)
+	half = half.max(Vector2(40, 40))
 	_table_plate.polygon = PackedVector2Array([
-		Vector2(0, -hh),
-		Vector2(hw, 0),
-		Vector2(0, hh),
-		Vector2(-hw, 0),
+		Vector2(-half.x, -half.y),
+		Vector2(half.x, -half.y),
+		Vector2(half.x, half.y),
+		Vector2(-half.x, half.y),
 	])
-	_table_plate.color = Color(0.08, 0.2, 0.14, 1)
+	_table_plate.color = Color(0.1, 0.28, 0.18, 1)
 	_table_plate.position = Vector2.ZERO
 
 
@@ -652,47 +659,57 @@ func _space_side(index: int) -> int:
 
 
 func _space_tile_rotation(index: int) -> float:
-	## Monopoly-style: color band / title face the board center on each edge.
+	## Texture band is at the top; rotate so the band faces the outer edge.
 	match _space_side(index):
-		0:
-			return 0.0
-		1:
-			return PI * 0.5
-		2:
+		0: # bottom, outer +Y
 			return PI
-		3:
+		1: # right, outer +X
+			return PI * 0.5
+		2: # top, outer -Y
+			return 0.0
+		3: # left, outer -X
 			return -PI * 0.5
 	return 0.0
 
 
-func _iso_ring_centers(count: int) -> Array[Vector2]:
-	var per_side := maxi(count / 4, 1)
-	var grid: Array[Vector2] = []
-	grid.resize(count)
-	var idx := 0
-	for i in per_side:
-		grid[idx] = Vector2(float(i), float(per_side))
-		idx += 1
-	for i in per_side:
-		grid[idx] = Vector2(float(per_side), float(per_side - i))
-		idx += 1
-	for i in per_side:
-		grid[idx] = Vector2(float(per_side - i), 0.0)
-		idx += 1
-	for i in per_side:
-		grid[idx] = Vector2(0.0, float(i))
-		idx += 1
-	while idx < count:
-		grid[idx] = Vector2(float(idx % (per_side + 1)), float(per_side) + 1.0)
-		idx += 1
+func _square_ring_centers(count: int) -> Array[Vector2]:
+	var per := maxi(count / 4, 1)
+	var edges := maxi(per - 1, 1)
+	var corner_r := CORNER * 0.5
+	var arm := float(edges) * EDGE_W * 0.5 + corner_r
 	var centers: Array[Vector2] = []
-	for g in grid:
-		centers.append(_grid_to_iso(g))
+	centers.resize(count)
+	for i in count:
+		var side := int(i / per)
+		var slot := i % per
+		var pos := Vector2.ZERO
+		match side:
+			0: # bottom: left → right
+				if slot == 0:
+					pos = Vector2(-arm, arm)
+				else:
+					var x0 := -arm + corner_r + EDGE_W * 0.5
+					pos = Vector2(x0 + float(slot - 1) * EDGE_W, arm)
+			1: # right: bottom → top
+				if slot == 0:
+					pos = Vector2(arm, arm)
+				else:
+					var y0 := arm - corner_r - EDGE_W * 0.5
+					pos = Vector2(arm, y0 - float(slot - 1) * EDGE_W)
+			2: # top: right → left
+				if slot == 0:
+					pos = Vector2(arm, -arm)
+				else:
+					var x0 := arm - corner_r - EDGE_W * 0.5
+					pos = Vector2(x0 - float(slot - 1) * EDGE_W, -arm)
+			3: # left: top → bottom
+				if slot == 0:
+					pos = Vector2(-arm, -arm)
+				else:
+					var y0 := -arm + corner_r + EDGE_W * 0.5
+					pos = Vector2(-arm, y0 + float(slot - 1) * EDGE_W)
+		centers[i] = pos
 	return centers
-
-
-func _grid_to_iso(g: Vector2) -> Vector2:
-	return Vector2((g.x - g.y) * ISO_STEP_X, (g.x + g.y) * ISO_STEP_Y)
 
 
 func _highlight_current_tile() -> void:
