@@ -13,7 +13,7 @@ related_docs:
   - engine-scene-stack.md
   - lab-shell.md
 keywords: [layout, inventory, paths, tests]
-last_reviewed: 2026-11-04
+last_reviewed: 2026-11-05
 ---
 
 # Source layout
@@ -58,7 +58,7 @@ Inventory of the lab tree. Update this page when paths are added, removed, or re
 | pong | `pong_config.gd`, `pong_sim.gd` | host extends LayeredHost + menu/play/pause | `games/pong/docs/` | `pong_sim_test.gd`, `pong_host_flow_test.gd` |
 | snake | `snake_config.gd`, `snake_sim.gd` | host extends LayeredHost + menu/play/pause | `games/snake/docs/` | `snake_sim_test.gd`, `snake_host_flow_test.gd` |
 | breakout | `breakout_config.gd`, `breakout_sim.gd` | host + menu/play/pause + `assets/` | `games/breakout/docs/` | `breakout_sim_test.gd`, `breakout_host_flow_test.gd` |
-| districts | board/player/config/sim/bot | host + setup/play/pause + `assets/` (Kenney + iso tiles) | `games/districts/docs/` | `district_sim_test.gd`, `district_host_flow_test.gd` |
+| districts | board/player/config/sim/bot | host + setup/play/pause + `district_tile_baker.gd` + `assets/` (Kenney + felt) | `games/districts/docs/` | `district_sim_test.gd`, `district_host_flow_test.gd`, `district_tile_baker_test.gd` |
 
 ## Engine modules
 
@@ -102,3 +102,4 @@ Inventory of the lab tree. Update this page when paths are added, removed, or re
 | `tests/games/breakout/breakout_host_flow_test.gd` | breakout pause keep-alive |
 | `tests/games/districts/district_sim_test.gd` | board turns / bots / jail |
 | `tests/games/districts/district_host_flow_test.gd` | setup / play / pause |
+| `tests/games/districts/district_tile_baker_test.gd` | procedural iso tile faces |

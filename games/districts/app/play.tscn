@@ -19,14 +19,18 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-color = Color(0.05, 0.07, 0.09, 1)
+color = Color(0.04, 0.05, 0.07, 1)
 
 [node name="BoardRoot" type="Control" parent="."]
 clip_contents = true
 layout_mode = 1
 anchors_preset = 15
-anchor_right = 0.7
+anchor_right = 0.68
 anchor_bottom = 1.0
+offset_left = 12.0
+offset_top = 12.0
+offset_right = -8.0
+offset_bottom = -12.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 0
@@ -39,32 +43,47 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-color = Color(0.18, 0.12, 0.08, 1)
+color = Color(0.22, 0.14, 0.09, 1)
+
+[node name="FrameInner" type="ColorRect" parent="BoardRoot"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 6.0
+offset_top = 6.0
+offset_right = -6.0
+offset_bottom = -6.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.12, 0.08, 0.05, 1)
 
 [node name="Felt" type="TextureRect" parent="BoardRoot"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 10.0
-offset_top = 10.0
-offset_right = -10.0
-offset_bottom = -10.0
+offset_left = 12.0
+offset_top = 12.0
+offset_right = -12.0
+offset_bottom = -12.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 expand_mode = 1
 stretch_mode = 1
+modulate = Color(0.85, 1, 0.9, 1)
 
 [node name="SubViewportContainer" type="SubViewportContainer" parent="BoardRoot"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 14.0
-offset_top = 14.0
-offset_right = -14.0
-offset_bottom = -14.0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = -16.0
 grow_horizontal = 2
 grow_vertical = 2
 stretch = true
@@ -79,46 +98,62 @@ render_target_update_mode = 4
 
 [node name="Board" type="Node2D" parent="BoardRoot/SubViewportContainer/SubViewport/World"]
 
+[node name="Fx" type="Node2D" parent="BoardRoot/SubViewportContainer/SubViewport/World"]
+
 [node name="Pawns" type="Node2D" parent="BoardRoot/SubViewportContainer/SubViewport/World"]
 
 [node name="Camera2D" type="Camera2D" parent="BoardRoot/SubViewportContainer/SubViewport"]
 position = Vector2(400, 300)
 
-[node name="DiceOverlay" type="HBoxContainer" parent="BoardRoot"]
+[node name="SpaceChip" type="PanelContainer" parent="BoardRoot"]
 visible = false
 layout_mode = 1
 anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
-offset_left = -70.0
-offset_top = 24.0
-offset_right = 70.0
-offset_bottom = 88.0
+offset_left = -140.0
+offset_top = 20.0
+offset_right = 140.0
+offset_bottom = 58.0
 grow_horizontal = 2
-theme_override_constants/separation = 12
+
+[node name="SpaceChipLabel" type="Label" parent="BoardRoot/SpaceChip"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.97, 1, 1)
+theme_override_font_sizes/font_size = 14
+horizontal_alignment = 1
+text = "Plaza Gate"
+
+[node name="DiceOverlay" type="HBoxContainer" parent="BoardRoot"]
+visible = false
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -80.0
+offset_top = -110.0
+offset_right = 80.0
+offset_bottom = -30.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_constants/separation = 16
 alignment = 1
 
 [node name="DieA" type="TextureRect" parent="BoardRoot/DiceOverlay"]
-custom_minimum_size = Vector2(56, 56)
+custom_minimum_size = Vector2(64, 64)
 layout_mode = 2
 expand_mode = 1
 stretch_mode = 5
 
 [node name="DieB" type="TextureRect" parent="BoardRoot/DiceOverlay"]
-custom_minimum_size = Vector2(56, 56)
+custom_minimum_size = Vector2(64, 64)
 layout_mode = 2
 expand_mode = 1
 stretch_mode = 5
 
-[node name="Hud" type="Control" parent="."]
-layout_mode = 1
-anchor_left = 0.7
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 0
-grow_vertical = 2
-
-[node name="Panel" type="ColorRect" parent="Hud"]
+[node name="ToastLayer" type="Control" parent="BoardRoot"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -126,101 +161,156 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-color = Color(0.09, 0.11, 0.15, 0.98)
 
-[node name="Accent" type="ColorRect" parent="Hud"]
-layout_mode = 0
-offset_right = 6.0
-offset_bottom = 2000.0
-mouse_filter = 2
-color = Color(0.3, 0.75, 0.55, 1)
+[node name="Hud" type="MarginContainer" parent="."]
+layout_mode = 1
+anchor_left = 0.68
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 4.0
+offset_top = 12.0
+offset_right = -12.0
+offset_bottom = -12.0
+grow_horizontal = 0
+grow_vertical = 2
+theme_override_constants/margin_left = 0
+theme_override_constants/margin_top = 0
+theme_override_constants/margin_right = 0
+theme_override_constants/margin_bottom = 0
 
-[node name="Turn" type="Label" parent="Hud"]
-layout_mode = 0
-offset_left = 20.0
-offset_top = 18.0
-offset_right = 360.0
-offset_bottom = 50.0
-theme_override_colors/font_color = Color(0.9, 0.95, 1, 1)
-theme_override_font_sizes/font_size = 20
-text = "Turn"
+[node name="Panel" type="PanelContainer" parent="Hud"]
+layout_mode = 2
 
-[node name="Offer" type="Label" parent="Hud"]
+[node name="Margin" type="MarginContainer" parent="Hud/Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 16
+
+[node name="Column" type="VBoxContainer" parent="Hud/Panel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Header" type="VBoxContainer" parent="Hud/Panel/Margin/Column"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="Brand" type="Label" parent="Hud/Panel/Margin/Column/Header"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.35, 0.85, 0.65, 1)
+theme_override_font_sizes/font_size = 12
+text = "DISTRICTS"
+
+[node name="Turn" type="Label" parent="Hud/Panel/Margin/Column/Header"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.95, 0.97, 1, 1)
+theme_override_font_sizes/font_size = 22
+text = "Seat 1"
+
+[node name="Offer" type="Label" parent="Hud/Panel/Margin/Column/Header"]
 visible = false
-layout_mode = 0
-offset_left = 20.0
-offset_top = 52.0
-offset_right = 360.0
-offset_bottom = 84.0
-theme_override_colors/font_color = Color(1, 0.85, 0.45, 1)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.84, 0.4, 1)
 theme_override_font_sizes/font_size = 14
+autowrap_mode = 3
 text = "Offer"
 
-[node name="Roster" type="VBoxContainer" parent="Hud"]
-layout_mode = 0
-offset_left = 20.0
-offset_top = 96.0
-offset_right = 360.0
-offset_bottom = 260.0
-theme_override_constants/separation = 6
+[node name="Sep1" type="ColorRect" parent="Hud/Panel/Margin/Column"]
+custom_minimum_size = Vector2(0, 2)
+layout_mode = 2
+color = Color(1, 1, 1, 0.08)
 
-[node name="Log" type="Label" parent="Hud"]
-layout_mode = 0
-offset_left = 20.0
-offset_top = 270.0
-offset_right = 360.0
-offset_bottom = 430.0
-theme_override_colors/font_color = Color(0.65, 0.74, 0.82, 1)
-theme_override_font_sizes/font_size = 13
-autowrap_mode = 3
-text = "Log"
+[node name="RosterTitle" type="Label" parent="Hud/Panel/Margin/Column"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.55, 0.62, 0.7, 1)
+theme_override_font_sizes/font_size = 11
+text = "PLAYERS"
 
-[node name="Actions" type="VBoxContainer" parent="Hud"]
-layout_mode = 0
-offset_left = 20.0
-offset_top = 450.0
-offset_right = 360.0
-offset_bottom = 700.0
-theme_override_constants/separation = 10
+[node name="Roster" type="VBoxContainer" parent="Hud/Panel/Margin/Column"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 8
 
-[node name="Fit" type="Button" parent="Hud/Actions"]
+[node name="Sep2" type="ColorRect" parent="Hud/Panel/Margin/Column"]
+custom_minimum_size = Vector2(0, 2)
+layout_mode = 2
+color = Color(1, 1, 1, 0.08)
+
+[node name="LogTitle" type="Label" parent="Hud/Panel/Margin/Column"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.55, 0.62, 0.7, 1)
+theme_override_font_sizes/font_size = 11
+text = "FEED"
+
+[node name="Log" type="RichTextLabel" parent="Hud/Panel/Margin/Column"]
+custom_minimum_size = Vector2(0, 140)
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_colors/default_color = Color(0.72, 0.8, 0.88, 1)
+theme_override_font_sizes/normal_font_size = 13
+bbcode_enabled = true
+fit_content = false
+scroll_active = true
+text = "Match ready."
+
+[node name="Actions" type="VBoxContainer" parent="Hud/Panel/Margin/Column"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Fit" type="Button" parent="Hud/Panel/Margin/Column/Actions"]
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 text = "Fit board"
 
-[node name="Roll" type="Button" parent="Hud/Actions"]
-custom_minimum_size = Vector2(0, 44)
+[node name="Roll" type="Button" parent="Hud/Panel/Margin/Column/Actions"]
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
-text = "Roll"
+text = "Roll dice"
 
-[node name="Buy" type="Button" parent="Hud/Actions"]
+[node name="BuyRow" type="HBoxContainer" parent="Hud/Panel/Margin/Column/Actions"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Buy" type="Button" parent="Hud/Panel/Margin/Column/Actions/BuyRow"]
 custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
+size_flags_horizontal = 3
 text = "Buy"
 
-[node name="Skip" type="Button" parent="Hud/Actions"]
+[node name="Skip" type="Button" parent="Hud/Panel/Margin/Column/Actions/BuyRow"]
 custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
-text = "Skip"
+size_flags_horizontal = 3
+text = "Pass"
 
-[node name="Hint" type="Label" parent="Hud"]
-layout_mode = 0
-offset_left = 20.0
-offset_top = 660.0
-offset_right = 360.0
-offset_bottom = 700.0
-theme_override_colors/font_color = Color(0.5, 0.58, 0.65, 1)
+[node name="Hint" type="Label" parent="Hud/Panel/Margin/Column"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.45, 0.52, 0.6, 1)
 theme_override_font_sizes/font_size = 11
-text = "Drag pan · wheel zoom · Esc pause"
+autowrap_mode = 3
+text = "Drag to pan · wheel zoom · Esc pause"
 
-[node name="Banner" type="Label" parent="Hud"]
+[node name="Banner" type="PanelContainer" parent="."]
 visible = false
-layout_mode = 0
-offset_left = 20.0
-offset_top = 320.0
-offset_right = 360.0
-offset_bottom = 420.0
-theme_override_colors/font_color = Color(1, 0.9, 0.5, 1)
-theme_override_font_sizes/font_size = 20
+z_index = 20
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = -70.0
+offset_right = 200.0
+offset_bottom = 70.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="BannerLabel" type="Label" parent="Banner"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.92, 0.55, 1)
+theme_override_font_sizes/font_size = 22
 horizontal_alignment = 1
+vertical_alignment = 1
 text = "Winner"

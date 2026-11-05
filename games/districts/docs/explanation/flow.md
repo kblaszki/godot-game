@@ -11,7 +11,7 @@ related_docs:
   - ../reference/app.md
   - ../reference/sim.md
 keywords: [districts, flow]
-last_reviewed: 2026-11-04
+last_reviewed: 2026-11-05
 ---
 
 # Districts flow
@@ -27,4 +27,4 @@ stateDiagram-v2
   setup --> labLauncher: Quit
 ```
 
-Turn loop lives in `DistrictSim` (`roll` → resolve → optional `buy`/`skip` → next seat). Presentation only animates/logs events and calls `bot_act` on bot seats.
+Turn loop lives in `DistrictSim` (`roll` → resolve → optional `buy`/`skip` → next seat). Play queues those events through Tweens (dice → hops → offers) before unlocking input; bots call `bot_act` only when idle.

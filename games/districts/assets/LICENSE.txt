@@ -6,4 +6,6 @@ Kenney Boardgame Pack (CC0 1.0)
 - Used: meeple pieces (red/blue/green/yellow), white dice faces
 - Attribution optional: "Kenney.nl"
 
-Lab-authored isometric tiles and felt texture under tiles/ (CC0).
+Lab-authored felt texture under tiles/felt.png (CC0).
+Space faces are drawn at runtime by DistrictTileBaker (procedural; CC0).
+Legacy stripe PNGs under tiles/ are unused fallbacks (CC0).

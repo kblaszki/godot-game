@@ -18,7 +18,7 @@ last_reviewed: 2026-11-05
 
 # Districts
 
-Original property-circuit board game (genre inspiration only — not Monopoly IP). Headless rules in `sim/`; shared isometric tabletop in `app/` with SubViewport camera (fit/pan/zoom), Kenney meeples/dice, and lab iso tiles.
+Original property-circuit board game (genre inspiration only — not Monopoly IP). Headless rules in `sim/`; isometric tabletop in `app/` with SubViewport camera, procedural labeled tiles (`DistrictTileBaker`), Kenney meeples/dice, and felt.
 
 ## Reference
 
