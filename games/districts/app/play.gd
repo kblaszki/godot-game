@@ -4,12 +4,14 @@ const SETUP_PATH := "res://games/districts/app/setup.tscn"
 const PAUSE_PATH := "res://games/districts/app/pause_menu.tscn"
 const ZOOM_MIN := 0.35
 const ZOOM_MAX := 2.4
-const PAD := 88.0
-const STEP_SEC := 0.16
-const TILE_HALF := Vector2(110, 110)
-const FOLLOW_POS_RATE := 2.6
-const FOLLOW_ROT_RATE := 2.2
-const ORBIT_SENS := 0.006
+const PAD := 96.0
+const STEP_SEC := 0.22
+const TILE_HALF := Vector2(96.0, 56.0)
+const FOLLOW_POS_RATE := 2.2
+const FOLLOW_ROT_RATE := 2.0
+const ORBIT_SENS := 0.009
+const ISO_STEP_X := 88.0
+const ISO_STEP_Y := 48.0
 
 const MEEPLE_PATHS: Array[String] = [
 	"res://games/districts/assets/kenney_boardgame/pieces/meeple_red.png",
@@ -43,13 +45,17 @@ var _busy: bool = false
 var _cash_cache: Array[int] = []
 var _banner_shown: bool = false
 var _owner_pips: Array[Polygon2D] = []
+var _follow_space_index: int = -1
 
 @onready var _board_root: Control = $BoardRoot
 @onready var _felt: TextureRect = $BoardRoot/Felt
 @onready var _svc: SubViewportContainer = $BoardRoot/SubViewportContainer
-@onready var _board: Node2D = $BoardRoot/SubViewportContainer/SubViewport/World/Board
-@onready var _fx: Node2D = $BoardRoot/SubViewportContainer/SubViewport/World/Fx
-@onready var _pawns: Node2D = $BoardRoot/SubViewportContainer/SubViewport/World/Pawns
+@onready var _pivot: Node2D = $BoardRoot/SubViewportContainer/SubViewport/World/BoardPivot
+@onready var _table_felt: Sprite2D = $BoardRoot/SubViewportContainer/SubViewport/World/BoardPivot/TableFelt
+@onready var _table_plate: Polygon2D = $BoardRoot/SubViewportContainer/SubViewport/World/BoardPivot/TablePlate
+@onready var _board: Node2D = $BoardRoot/SubViewportContainer/SubViewport/World/BoardPivot/Board
+@onready var _fx: Node2D = $BoardRoot/SubViewportContainer/SubViewport/World/BoardPivot/Fx
+@onready var _pawns: Node2D = $BoardRoot/SubViewportContainer/SubViewport/World/BoardPivot/Pawns
 @onready var _camera: Camera2D = $BoardRoot/SubViewportContainer/SubViewport/Camera2D
 @onready var _space_chip: PanelContainer = $BoardRoot/SpaceChip
 @onready var _space_chip_label: Label = $BoardRoot/SpaceChip/SpaceChipLabel
@@ -168,14 +174,17 @@ func _style_button(btn: Button, color: Color, emphasize: bool) -> void:
 func _process(delta: float) -> void:
 	_pulse += delta
 	_highlight_current_tile()
-	_keep_pawns_upright()
 	if _follow_t > 0.0:
 		_follow_t = maxf(0.0, _follow_t - delta)
 		var pos_t := 1.0 - exp(-FOLLOW_POS_RATE * delta)
 		_camera.position = _camera.position.lerp(_follow_target, pos_t)
 		if _auto_orient:
 			var rot_t := 1.0 - exp(-FOLLOW_ROT_RATE * delta)
-			_camera.rotation = lerp_angle(_camera.rotation, _follow_rot_target, rot_t)
+			_pivot.rotation = lerp_angle(_pivot.rotation, _follow_rot_target, rot_t)
+			# Keep camera target locked to the followed tile in world space while the table turns.
+			if _follow_space_valid():
+				_follow_target = _tile_world_pos(_follow_space_index)
+				_camera.position = _camera.position.lerp(_follow_target, pos_t)
 	if _busy or _sim.get_phase() == DistrictSim.PHASE_OVER:
 		return
 	var player := _sim.get_player(_sim.get_current_player())
@@ -184,8 +193,12 @@ func _process(delta: float) -> void:
 	_bot_cooldown -= delta
 	if _bot_cooldown > 0.0:
 		return
-	_bot_cooldown = 0.45
+	_bot_cooldown = 0.55
 	_run_action(func() -> Array: return _sim.bot_act())
+
+
+func _follow_space_valid() -> bool:
+	return _follow_space_index >= 0 and _follow_space_index < _tile_centers.size()
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -229,15 +242,11 @@ func _on_board_gui_input(event: InputEvent) -> void:
 		var delta := mm.position - _drag_last
 		_drag_last = mm.position
 		if _orbiting:
-			_camera.rotation += delta.x * ORBIT_SENS
+			_pivot.rotation += delta.x * ORBIT_SENS
 			_svc.accept_event()
 		elif _panning:
-			_camera.position -= _screen_delta_to_world(delta)
+			_camera.position -= delta / _camera.zoom.x
 			_svc.accept_event()
-
-
-func _screen_delta_to_world(screen_delta: Vector2) -> Vector2:
-	return screen_delta.rotated(_camera.rotation) / _camera.zoom.x
 
 
 func _zoom_at(screen_pos: Vector2, factor: float) -> void:
@@ -246,9 +255,9 @@ func _zoom_at(screen_pos: Vector2, factor: float) -> void:
 	if is_equal_approx(new_zoom, old_zoom):
 		return
 	var local := screen_pos - _svc.size * 0.5
-	var world_under := _camera.position + local.rotated(_camera.rotation) / old_zoom
+	var world_under := _camera.position + local / old_zoom
 	_camera.zoom = Vector2(new_zoom, new_zoom)
-	_camera.position = world_under - local.rotated(_camera.rotation) / new_zoom
+	_camera.position = world_under - local / new_zoom
 	_follow_t = 0.0
 
 
@@ -263,15 +272,18 @@ func _fit_camera() -> void:
 	if _board_rect.size.x <= 1.0:
 		return
 	var view := _view_size()
-	var target := _board_rect.grow(PAD)
-	var z := clampf(minf(view.x / target.size.x, view.y / target.size.y), ZOOM_MIN, ZOOM_MAX)
+	var local_target := _board_rect.grow(PAD)
+	var z := clampf(minf(view.x / local_target.size.x, view.y / local_target.size.y), ZOOM_MIN, ZOOM_MAX)
 	_auto_orient = true
 	_follow_rot_target = 0.0
+	_follow_space_index = -1
 	_follow_t = 0.0
+	_camera.rotation = 0.0
+	var world_center := _pivot.position
 	var tw := create_tween().set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_CUBIC)
-	tw.tween_property(_camera, "zoom", Vector2(z, z), 0.45)
-	tw.parallel().tween_property(_camera, "position", target.get_center(), 0.45)
-	tw.parallel().tween_property(_camera, "rotation", 0.0, 0.45)
+	tw.tween_property(_camera, "zoom", Vector2(z, z), 0.5)
+	tw.parallel().tween_property(_camera, "position", world_center, 0.5)
+	tw.parallel().tween_property(_pivot, "rotation", 0.0, 0.5)
 
 
 func _on_roll() -> void:
@@ -427,11 +439,16 @@ func _animate_pawn_path(player_id: int, from_i: int, to_i: int, steps: int) -> v
 func _set_follow_space(space_i: int) -> void:
 	if space_i < 0 or space_i >= _tile_centers.size():
 		return
-	_follow_target = _tile_centers[space_i]
-	# Rotate view so this side's labels read upright (Monopoly edge facing the viewer).
+	_follow_space_index = space_i
+	_follow_target = _tile_world_pos(space_i)
+	# Spin the table so this Monopoly edge sits upright at the bottom of the view.
 	_follow_rot_target = -_space_tile_rotation(space_i)
-	_follow_t = 0.85
+	_follow_t = 1.0
 	_auto_orient = true
+
+
+func _tile_world_pos(space_i: int) -> Vector2:
+	return _pivot.to_global(_tile_centers[space_i])
 
 
 func _pop_tile(space_i: int, tint: Color) -> void:
@@ -493,7 +510,6 @@ func _sync_cash_toasts() -> void:
 	for i in _sim.get_player_count():
 		var cash := _sim.get_player(i).cash
 		if i < _cash_cache.size() and cash != _cash_cache[i]:
-			# already toasted from specific events; just refresh cache
 			_cash_cache[i] = cash
 		elif i >= _cash_cache.size():
 			_cash_cache.append(cash)
@@ -533,23 +549,39 @@ func _build_board() -> void:
 		child.queue_free()
 	_tile_sprites.clear()
 	_owner_pips.clear()
-	_tile_centers = _iso_ring_centers(_sim.get_config().space_count())
+
+	var absolute := _iso_ring_centers(_sim.get_config().space_count())
 	var min_p := Vector2(INF, INF)
 	var max_p := Vector2(-INF, -INF)
+	for center in absolute:
+		min_p = min_p.min(center - TILE_HALF)
+		max_p = max_p.max(center + TILE_HALF)
+	var abs_rect := Rect2(min_p, max_p - min_p)
+	var origin := abs_rect.get_center()
+	_pivot.position = origin
+	_pivot.rotation = 0.0
+	_camera.rotation = 0.0
+
+	_tile_centers.clear()
+	for center in absolute:
+		_tile_centers.append(center - origin)
+	_board_rect = Rect2(-abs_rect.size * 0.5, abs_rect.size)
+
+	_setup_table_surface()
+
 	for i in _sim.get_config().space_count():
 		var space := _sim.get_config().space_at(i)
-		var center := _tile_centers[i]
+		var local := _tile_centers[i]
 		var sprite := Sprite2D.new()
 		sprite.texture = DistrictTileBaker.bake(space)
 		sprite.centered = true
-		sprite.position = center
+		sprite.position = local
 		sprite.rotation = _space_tile_rotation(i)
 		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 		var pip := Polygon2D.new()
 		pip.polygon = PackedVector2Array([
 			Vector2(-5, 0), Vector2(0, -5), Vector2(5, 0), Vector2(0, 5),
 		])
-		# Toward board center relative to the tile's local "up" (color band).
 		pip.position = Vector2(0, 28)
 		pip.visible = false
 		pip.z_index = 2
@@ -557,9 +589,34 @@ func _build_board() -> void:
 		_board.add_child(sprite)
 		_tile_sprites.append(sprite)
 		_owner_pips.append(pip)
-		min_p = min_p.min(center - TILE_HALF)
-		max_p = max_p.max(center + TILE_HALF)
-	_board_rect = Rect2(min_p, max_p - min_p)
+
+
+func _setup_table_surface() -> void:
+	var felt_tex: Texture2D = load("res://games/districts/assets/tiles/felt.png")
+	_table_felt.texture = felt_tex
+	_table_felt.centered = true
+	_table_felt.position = Vector2.ZERO
+	_table_felt.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	var pad := 120.0
+	var size := _board_rect.size + Vector2(pad, pad)
+	if felt_tex != null:
+		_table_felt.scale = Vector2(
+			size.x / float(felt_tex.get_width()),
+			size.y / float(felt_tex.get_height())
+		)
+	_table_felt.modulate = Color(0.75, 0.92, 0.8, 1)
+
+	# Darker iso plate under the ring (diamond matching board bounds).
+	var hw := _board_rect.size.x * 0.42
+	var hh := _board_rect.size.y * 0.42
+	_table_plate.polygon = PackedVector2Array([
+		Vector2(0, -hh),
+		Vector2(hw, 0),
+		Vector2(0, hh),
+		Vector2(-hw, 0),
+	])
+	_table_plate.color = Color(0.08, 0.2, 0.14, 1)
+	_table_plate.position = Vector2.ZERO
 
 
 func _build_pawns() -> void:
@@ -574,7 +631,6 @@ func _build_pawns() -> void:
 		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		sprite.z_index = 10
 		sprite.position = _tile_centers[0] + _pawn_offset(i)
-		# soft shadow
 		var shadow := Sprite2D.new()
 		shadow.texture = sprite.texture
 		shadow.centered = true
@@ -588,12 +644,6 @@ func _build_pawns() -> void:
 
 func _pawn_offset(player_id: int) -> Vector2:
 	return Vector2(float(player_id) * 14.0 - 21.0, -30.0 - float(player_id % 2) * 10.0)
-
-
-func _keep_pawns_upright() -> void:
-	var counter := -_camera.rotation
-	for pawn in _pawn_nodes:
-		pawn.rotation = counter
 
 
 func _space_side(index: int) -> int:
@@ -642,7 +692,7 @@ func _iso_ring_centers(count: int) -> Array[Vector2]:
 
 
 func _grid_to_iso(g: Vector2) -> Vector2:
-	return Vector2((g.x - g.y) * 86.0, (g.x + g.y) * 48.0)
+	return Vector2((g.x - g.y) * ISO_STEP_X, (g.x + g.y) * ISO_STEP_Y)
 
 
 func _highlight_current_tile() -> void:

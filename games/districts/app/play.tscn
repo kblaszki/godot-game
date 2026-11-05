@@ -92,15 +92,26 @@ mouse_filter = 0
 [node name="SubViewport" type="SubViewport" parent="BoardRoot/SubViewportContainer"]
 handle_input_locally = false
 size = Vector2i(800, 600)
+transparent_bg = true
 render_target_update_mode = 4
 
 [node name="World" type="Node2D" parent="BoardRoot/SubViewportContainer/SubViewport"]
 
-[node name="Board" type="Node2D" parent="BoardRoot/SubViewportContainer/SubViewport/World"]
+[node name="BoardPivot" type="Node2D" parent="BoardRoot/SubViewportContainer/SubViewport/World"]
 
-[node name="Fx" type="Node2D" parent="BoardRoot/SubViewportContainer/SubViewport/World"]
+[node name="TableFelt" type="Sprite2D" parent="BoardRoot/SubViewportContainer/SubViewport/World/BoardPivot"]
+z_index = -20
+texture_filter = 0
 
-[node name="Pawns" type="Node2D" parent="BoardRoot/SubViewportContainer/SubViewport/World"]
+[node name="TablePlate" type="Polygon2D" parent="BoardRoot/SubViewportContainer/SubViewport/World/BoardPivot"]
+z_index = -10
+color = Color(0.1, 0.22, 0.16, 1)
+
+[node name="Board" type="Node2D" parent="BoardRoot/SubViewportContainer/SubViewport/World/BoardPivot"]
+
+[node name="Fx" type="Node2D" parent="BoardRoot/SubViewportContainer/SubViewport/World/BoardPivot"]
+
+[node name="Pawns" type="Node2D" parent="BoardRoot/SubViewportContainer/SubViewport/World/BoardPivot"]
 
 [node name="Camera2D" type="Camera2D" parent="BoardRoot/SubViewportContainer/SubViewport"]
 position = Vector2(400, 300)
