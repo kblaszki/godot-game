@@ -44,6 +44,11 @@ var _panning: bool = false
 @onready var _build_row: HBoxContainer = $DockAnchor/ActionDock/Margin/Column/BuildRow
 @onready var _build_pick: OptionButton = $DockAnchor/ActionDock/Margin/Column/BuildRow/BuildPick
 @onready var _build_btn: Button = $DockAnchor/ActionDock/Margin/Column/BuildRow/Build
+@onready var _trade_row: HBoxContainer = $DockAnchor/ActionDock/Margin/Column/TradeRow
+@onready var _trade_to: OptionButton = $DockAnchor/ActionDock/Margin/Column/TradeRow/TradeTo
+@onready var _trade_city: OptionButton = $DockAnchor/ActionDock/Margin/Column/TradeRow/TradeCity
+@onready var _trade_offer: Button = $DockAnchor/ActionDock/Margin/Column/TradeRow/TradeOffer
+@onready var _trade_accept: Button = $DockAnchor/ActionDock/Margin/Column/TradeRow/TradeAccept
 @onready var _tour_row: HBoxContainer = $DockAnchor/ActionDock/Margin/Column/TourRow
 @onready var _tour_pick: OptionButton = $DockAnchor/ActionDock/Margin/Column/TourRow/TourPick
 @onready var _tour_go: Button = $DockAnchor/ActionDock/Margin/Column/TourRow/TourGo
@@ -148,6 +153,8 @@ func _connect_buttons() -> void:
 	_skip.pressed.connect(_on_skip)
 	_done.pressed.connect(_on_done)
 	_build_btn.pressed.connect(_on_build)
+	_trade_offer.pressed.connect(_on_trade_offer)
+	_trade_accept.pressed.connect(_on_trade_accept)
 	_tour_go.pressed.connect(_on_tour)
 	_arena_btn.pressed.connect(_on_arena)
 	_chance_btn.pressed.connect(_on_chance)
@@ -216,6 +223,8 @@ func _apply_styles() -> void:
 	_style_button(_buy, Color(0.55, 0.42, 0.15, 1), true)
 	_style_button(_done, Color(0.18, 0.45, 0.62, 1), true)
 	_style_button(_build_btn, Color(0.45, 0.32, 0.62, 1), true)
+	_style_button(_trade_offer, Color(0.35, 0.4, 0.55, 1), true)
+	_style_button(_trade_accept, Color(0.2, 0.5, 0.4, 1), true)
 	_style_button(_tour_go, Color(0.2, 0.45, 0.62, 1), true)
 	_style_button(_arena_btn, Color(0.62, 0.28, 0.24, 1), true)
 	_style_button(_bid, Color(0.55, 0.42, 0.15, 1), true)
@@ -350,6 +359,26 @@ func _on_build() -> void:
 		return
 	var space_i := int(_build_pick.get_item_metadata(_build_pick.selected))
 	_run_action(func() -> Array: return _sim.build(space_i), "Can't build there.")
+
+
+func _on_trade_offer() -> void:
+	if _busy or not _human_turn() or _sim.get_phase() != DistrictSim.PHASE_MANAGE:
+		return
+	if _trade_to.item_count <= 0 or _trade_city.item_count <= 0:
+		_push_log("Nothing to trade.")
+		return
+	var to_id := int(_trade_to.get_item_metadata(_trade_to.selected))
+	var space_i := int(_trade_city.get_item_metadata(_trade_city.selected))
+	_run_action(
+		func() -> Array: return _sim.trade_offer(to_id, 0, PackedInt32Array([space_i]), 0, PackedInt32Array()),
+		"Trade failed."
+	)
+
+
+func _on_trade_accept() -> void:
+	if _busy or _sim.get_phase() != DistrictSim.PHASE_MANAGE:
+		return
+	_run_action(func() -> Array: return _sim.trade_accept(), "No open trade.")
 
 
 func _on_tour() -> void:
@@ -787,6 +816,8 @@ func _refresh_hud() -> void:
 	_skip.visible = phase == DistrictSim.PHASE_BUY
 	_done.visible = phase == DistrictSim.PHASE_MANAGE
 	_build_row.visible = phase == DistrictSim.PHASE_MANAGE and human
+	_trade_row.visible = phase == DistrictSim.PHASE_MANAGE and human
+	_sync_trade_list(phase)
 	_tour_row.visible = phase == DistrictSim.PHASE_TOUR and human
 	_arena_btn.visible = phase == DistrictSim.PHASE_ARENA
 	_chance_btn.visible = phase == DistrictSim.PHASE_CHANCE
@@ -799,6 +830,10 @@ func _refresh_hud() -> void:
 	_skip.disabled = not (unlocked and phase == DistrictSim.PHASE_BUY)
 	_done.disabled = not (unlocked and phase == DistrictSim.PHASE_MANAGE)
 	_build_btn.disabled = not (unlocked and phase == DistrictSim.PHASE_MANAGE and _build_pick.item_count > 0)
+	_trade_offer.disabled = not (unlocked and phase == DistrictSim.PHASE_MANAGE and _trade_city.item_count > 0 and _trade_to.item_count > 0)
+	var pending_trade := _sim.get_pending_trade()
+	var can_accept := not pending_trade.is_empty() and int(pending_trade.get("to", -1)) == current
+	_trade_accept.disabled = not (not _busy and phase == DistrictSim.PHASE_MANAGE and can_accept)
 	_tour_go.disabled = not (unlocked and phase == DistrictSim.PHASE_TOUR)
 	_arena_btn.disabled = not (unlocked and phase == DistrictSim.PHASE_ARENA)
 	_chance_btn.disabled = not (unlocked and phase == DistrictSim.PHASE_CHANCE)
@@ -882,6 +917,24 @@ func _sync_tour_list(phase: String) -> void:
 		_tour_pick.add_item(config.space_at(i).name)
 		_tour_pick.set_item_metadata(i, i)
 	_tour_ready = true
+
+
+func _sync_trade_list(phase: String) -> void:
+	if phase != DistrictSim.PHASE_MANAGE:
+		return
+	var current := _sim.get_current_player()
+	var player := _sim.get_player(current)
+	_trade_to.clear()
+	for i in _sim.get_player_count():
+		if i == current or _sim.get_player(i).bankrupt:
+			continue
+		_trade_to.add_item(_seat(i))
+		_trade_to.set_item_metadata(_trade_to.item_count - 1, i)
+	_trade_city.clear()
+	for i in player.owned.size():
+		var space_i := player.owned[i]
+		_trade_city.add_item(_sim.get_config().space_at(space_i).name)
+		_trade_city.set_item_metadata(_trade_city.item_count - 1, space_i)
 
 
 func _sync_gadgets(phase: String, human: bool) -> void:

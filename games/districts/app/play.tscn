@@ -312,6 +312,30 @@ custom_minimum_size = Vector2(88, 36)
 layout_mode = 2
 text = "Build"
 
+[node name="TradeRow" type="HBoxContainer" parent="DockAnchor/ActionDock/Margin/Column"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="TradeTo" type="OptionButton" parent="DockAnchor/ActionDock/Margin/Column/TradeRow"]
+custom_minimum_size = Vector2(90, 36)
+layout_mode = 2
+
+[node name="TradeCity" type="OptionButton" parent="DockAnchor/ActionDock/Margin/Column/TradeRow"]
+custom_minimum_size = Vector2(140, 36)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="TradeOffer" type="Button" parent="DockAnchor/ActionDock/Margin/Column/TradeRow"]
+custom_minimum_size = Vector2(72, 36)
+layout_mode = 2
+text = "Offer"
+
+[node name="TradeAccept" type="Button" parent="DockAnchor/ActionDock/Margin/Column/TradeRow"]
+custom_minimum_size = Vector2(72, 36)
+layout_mode = 2
+text = "Accept"
+
 [node name="TourRow" type="HBoxContainer" parent="DockAnchor/ActionDock/Margin/Column"]
 visible = false
 layout_mode = 2

@@ -79,7 +79,7 @@ Four corner cards (avatar, nick `P1` or `Bot`, cash). A center label shows the r
 |-------|---------|
 | `roll` | Roll, gadgets |
 | `buy` | Buy / Pass |
-| `manage` | Build on an owned space, Done (`end_manage`), gadgets |
+| `manage` | Build, city trade Offer/Accept, Done (`end_manage`), gadgets |
 | `auction` | Bid (high + 10) / Pass |
 | `tour` | Option list, then `pick_tour_target` |
 | `arena` | Resolve |

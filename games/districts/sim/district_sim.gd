@@ -137,6 +137,10 @@ func get_auction_high_bidder() -> int:
 	return _auction_high_bidder
 
 
+func get_pending_trade() -> Dictionary:
+	return _trade.duplicate(true)
+
+
 func has_monopoly(player_id: int, group: int) -> bool:
 	var indices := _config.group_spaces(group)
 	if indices.is_empty():
