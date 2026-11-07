@@ -13,7 +13,7 @@ related_docs:
   - engine-scene-stack.md
   - lab-shell.md
 keywords: [layout, inventory, paths, tests]
-last_reviewed: 2026-11-05
+last_reviewed: 2026-11-07
 ---
 
 # Source layout
@@ -59,6 +59,7 @@ Inventory of the lab tree. Update this page when paths are added, removed, or re
 | snake | `snake_config.gd`, `snake_sim.gd` | host extends LayeredHost + menu/play/pause | `games/snake/docs/` | `snake_sim_test.gd`, `snake_host_flow_test.gd` |
 | breakout | `breakout_config.gd`, `breakout_sim.gd` | host + menu/play/pause + `assets/` | `games/breakout/docs/` | `breakout_sim_test.gd`, `breakout_host_flow_test.gd` |
 | districts | board/player/config/sim/bot/chance/gadgets/network stubs | host + setup/play/pause + baker + `board_3d` + `district_audio` + `assets/` | `games/districts/docs/` | `district_sim_test.gd`, `district_host_flow_test.gd`, `district_tile_baker_test.gd` |
+| minigolf | config/hole/course/ball/score/sim/bot | host + menu/setup/play/pause/results + `course_3d` + audio | `games/minigolf/docs/` | physics/sim/bot/host_flow |
 
 ## Engine modules
 
@@ -103,3 +104,7 @@ Inventory of the lab tree. Update this page when paths are added, removed, or re
 | `tests/games/districts/district_sim_test.gd` | board turns / bots / jail |
 | `tests/games/districts/district_host_flow_test.gd` | setup / play / pause |
 | `tests/games/districts/district_tile_baker_test.gd` | procedural iso tile faces |
+| `tests/games/minigolf/minigolf_physics_test.gd` | putt bounce / sink / OOB |
+| `tests/games/minigolf/minigolf_sim_test.gd` | hotseat / course complete |
+| `tests/games/minigolf/minigolf_bot_test.gd` | bot determinism |
+| `tests/games/minigolf/minigolf_host_flow_test.gd` | menu / play / pause |

@@ -6,6 +6,7 @@ const GAMES := [
 	{"title": "Snake", "host_path": "res://games/snake/app/host.tscn"},
 	{"title": "Shatter", "host_path": "res://games/breakout/app/host.tscn"},
 	{"title": "Districts", "host_path": "res://games/districts/app/host.tscn"},
+	{"title": "Fairway Circuit", "host_path": "res://games/minigolf/app/host.tscn"},
 ]
 const SETTINGS_PATH := "res://lab/settings.tscn"
 

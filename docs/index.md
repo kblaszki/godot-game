@@ -62,3 +62,4 @@ Cross-game and engine docs for the **godot-game** lab (Godot 4.x, typed GDScript
 | [snake](../games/snake/docs/index.md) | `SnakeSim` grid snake plus menu, play, pause; Quit returns to lab |
 | [breakout / Shatter](../games/breakout/docs/index.md) | Neon `BreakoutSim` brick-breaker (Shatter UI) |
 | [districts](../games/districts/docs/index.md) | Property-circuit hotseat 2–4 with bots (3D board, corner HUD) |
+| [Fairway Circuit (minigolf)](../games/minigolf/docs/index.md) | 9-hole putt-putt hotseat + bots (Course3D iso) |

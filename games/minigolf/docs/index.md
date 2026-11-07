@@ -25,7 +25,7 @@ Kameralny putt-putt 3D (iso/orbit). Headless rules in `sim/`; presentation in `a
 | Doc | Purpose |
 |-----|---------|
 | [sim.md](reference/sim.md) | Physics, holes, scoring, bot |
-| [app.md](reference/app.md) | Course3D, HUD, scenes |
+| [app.md](reference/app.md) | Course3D, HUD, scenes (when present) |
 
 ## Explanation
 
