@@ -12,6 +12,10 @@ var _drag_last: Vector2 = Vector2.ZERO
 var _scorecard_open: bool = false
 var _shown_hole: int = -1
 var _going_results: bool = false
+var _lmb_pressed: bool = false
+var _lmb_dragged: bool = false
+var _lmb_press_pos: Vector2 = Vector2.ZERO
+const CLICK_DRAG_PX := 6.0
 
 @onready var _svc: SubViewportContainer = $BoardRoot/SubViewportContainer
 @onready var _viewport: SubViewport = $BoardRoot/SubViewportContainer/SubViewport
@@ -45,7 +49,7 @@ func _ready() -> void:
 	_power_bar.visible = false
 	_reload_hole()
 	_refresh_hud()
-	_push_feed("Click green to aim. Hold Space for power, release to putt. F fit · Tab card · Esc pause.")
+	_push_feed("Click fairway to aim · Space power · F fit · Esc pause")
 	await get_tree().process_frame
 	if is_inside_tree():
 		_course.fit(_svc.size)
@@ -122,9 +126,15 @@ func _on_board_gui_input(event: InputEvent) -> void:
 		var mb := event as InputEventMouseButton
 		if mb.button_index == MOUSE_BUTTON_LEFT:
 			if mb.pressed:
-				_course.begin_orbit()
+				_lmb_pressed = true
+				_lmb_dragged = false
+				_lmb_press_pos = mb.position
 				_drag_last = mb.position
 			else:
+				if _lmb_pressed and not _lmb_dragged:
+					_aim_from_screen(mb.position)
+				_lmb_pressed = false
+				_lmb_dragged = false
 				_course.end_orbit()
 			_svc.accept_event()
 		elif mb.button_index == MOUSE_BUTTON_RIGHT or mb.button_index == MOUSE_BUTTON_MIDDLE:
@@ -144,27 +154,55 @@ func _on_board_gui_input(event: InputEvent) -> void:
 		var mm := event as InputEventMouseMotion
 		var delta := mm.position - _drag_last
 		_drag_last = mm.position
-		if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
-			_course.orbit(delta.x)
+		if _lmb_pressed and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+			if not _lmb_dragged and mm.position.distance_to(_lmb_press_pos) >= CLICK_DRAG_PX:
+				_lmb_dragged = true
+				_course.begin_orbit()
+			if _lmb_dragged:
+				_course.orbit(delta.x)
 			_svc.accept_event()
 		elif Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT) or Input.is_mouse_button_pressed(MOUSE_BUTTON_MIDDLE):
 			_course.pan(delta)
 			_svc.accept_event()
-		elif not _busy and not _sim.get_player(_sim.get_current_player()).is_bot:
-			if _sim.get_phase() == MinigolfSim.PHASE_AIM or _sim.get_phase() == MinigolfSim.PHASE_POWER:
-				_aim_from_screen(mm.position)
 
 
 func _aim_from_screen(screen_pos: Vector2) -> void:
-	var view := _svc.size
-	if view.x < 2.0:
+	if _busy or _sim.get_player(_sim.get_current_player()).is_bot:
 		return
-	var local := (screen_pos - view * 0.5) / maxf(view.y, 1.0)
-	var dir := Vector2(local.x, -local.y)
-	if dir.length_squared() < 0.0001:
+	if _sim.get_phase() != MinigolfSim.PHASE_AIM and _sim.get_phase() != MinigolfSim.PHASE_POWER:
+		return
+	var target := _ray_fairway_xz(screen_pos)
+	if not is_finite(target.x):
+		return
+	var from := _sim.get_ball().pos
+	var dir := target - from
+	if dir.length_squared() < 0.0004:
 		return
 	_sim.set_aim(dir.normalized())
-	_course.set_aim_dir(_sim.get_aim(), _sim.get_ball().pos)
+	_course.set_aim_dir(_sim.get_aim(), from)
+
+
+func _ray_fairway_xz(screen_pos: Vector2) -> Vector2:
+	var cam := _course.get_camera()
+	if cam == null:
+		return Vector2(INF, INF)
+	var view := _svc.size
+	if view.x < 2.0 or view.y < 2.0:
+		return Vector2(INF, INF)
+	## SubViewportContainer stretch: map control-local mouse into viewport pixels.
+	var vp_pos := Vector2(
+		screen_pos.x / view.x * float(_viewport.size.x),
+		screen_pos.y / view.y * float(_viewport.size.y)
+	)
+	var origin := cam.project_ray_origin(vp_pos)
+	var direction := cam.project_ray_normal(vp_pos)
+	if absf(direction.y) < 0.0001:
+		return Vector2(INF, INF)
+	var t := -origin.y / direction.y
+	if t < 0.0:
+		return Vector2(INF, INF)
+	var world := origin + direction * t
+	return Vector2(world.x, world.z)
 
 
 func _on_fit() -> void:

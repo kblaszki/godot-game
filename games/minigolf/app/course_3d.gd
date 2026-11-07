@@ -23,10 +23,30 @@ var _panning: bool = false
 var _follow_ball: bool = false
 var _shake: Vector3 = Vector3.ZERO
 var _ball_display: Vector3 = Vector3.ZERO
+var _hole_tee: Vector2 = Vector2.ZERO
+var _hole_cup: Vector2 = Vector2.ZERO
+const WALL_THICK := 0.1
 
 
 func _ready() -> void:
 	_build_rig()
+
+
+func is_orbiting() -> bool:
+	return _orbiting
+
+
+func is_panning() -> bool:
+	return _panning
+
+
+func get_camera() -> Camera3D:
+	return _camera
+
+
+## Align BoxMesh local +X with XZ direction (dx, dz).
+static func yaw_for_xz_delta(delta: Vector2) -> float:
+	return atan2(-delta.y, delta.x)
 
 
 func _process(delta: float) -> void:
@@ -43,6 +63,8 @@ func _process(delta: float) -> void:
 func setup_hole(hole: HoleDef, show_ramp_visual: bool = false) -> void:
 	_clear(_course_root)
 	_clear(_decor)
+	_hole_tee = hole.tee_xz()
+	_hole_cup = hole.cup_xz()
 	var bmin := hole.bounds_min
 	var bmax := hole.bounds_max
 	var size := bmax - bmin
@@ -61,10 +83,8 @@ func setup_hole(hole: HoleDef, show_ramp_visual: bool = false) -> void:
 		if show_ramp_visual:
 			_add_ramp_visual(hole)
 		_add_trees(hole)
-
-	if _use_meshes():
 		if _ball == null:
-			_ball = _make_sphere(Color(0.95, 0.95, 0.98, 1), 0.04)
+			_ball = _make_sphere(Color(0.98, 0.98, 1.0, 1), 0.05)
 			_ball.name = "Ball"
 			_pivot.add_child(_ball)
 		if _aim_arrow == null:
@@ -91,10 +111,15 @@ func set_follow_ball(on: bool) -> void:
 func set_aim_dir(dir: Vector2, at_xz: Vector2) -> void:
 	if _aim_arrow == null:
 		return
-	_aim_arrow.visible = dir.length_squared() > 0.01
-	_aim_arrow.position = _pivot.to_local(_to_world(at_xz)) + Vector3(0, 0.05, 0)
-	var yaw := atan2(dir.x, dir.y)
-	_aim_arrow.rotation = Vector3(0, yaw, 0)
+	if dir.length_squared() < 0.01:
+		_aim_arrow.visible = false
+		return
+	var d := dir.normalized()
+	_aim_arrow.visible = true
+	## Shaft along local +X, centered ahead of the ball.
+	var tip := at_xz + d * 0.45
+	_aim_arrow.position = _pivot.to_local(_to_world(tip)) + Vector3(0, 0.06, 0)
+	_aim_arrow.rotation = Vector3(0, yaw_for_xz_delta(d), 0)
 
 
 func hide_aim() -> void:
@@ -110,9 +135,15 @@ func fit(view_size: Vector2) -> void:
 	if view_size.x < 2.0:
 		view_size = Vector2(800, 600)
 	var aspect := view_size.x / maxf(view_size.y, 1.0)
-	_distance = clampf(_bounds_radius * (2.4 / minf(aspect, 1.4)), _dist_min, _dist_max)
+	_distance = clampf(_bounds_radius * (2.55 / minf(aspect, 1.35)), _dist_min, _dist_max)
 	_pivot.rotation.y = 0.0
-	_focus = _pivot.global_position
+	## Bias focus toward tee so the putt starts in the lower half of the frame.
+	var tee_w := _to_world(_hole_tee)
+	var cup_w := _to_world(_hole_cup)
+	var mid := (tee_w + cup_w) * 0.5
+	_focus = mid.lerp(tee_w, 0.35)
+	if _pivot != null:
+		_focus = _focus.lerp(_pivot.global_position, 0.25)
 	_follow_ball = false
 	_apply_camera()
 
@@ -162,7 +193,8 @@ func _build_rig() -> void:
 
 	var sun := DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-50, 30, 0)
-	sun.light_energy = 1.1
+	sun.light_energy = 1.15
+	sun.shadow_enabled = true
 	add_child(sun)
 
 	_pivot = Node3D.new()
@@ -218,20 +250,28 @@ func _add_walls(hole: HoleDef) -> void:
 	for wall in hole.walls:
 		var a: Vector2 = wall["a"]
 		var b: Vector2 = wall["b"]
-		var mid := (a + b) * 0.5
 		var delta := b - a
 		var length := delta.length()
 		if length < 0.01:
 			continue
+		var dir := delta / length
+		## Inset along outward-ish normal so the face sits on the segment, not straddling tee.
+		var n := Vector2(-dir.y, dir.x)
+		var mid := (a + b) * 0.5 + n * (WALL_THICK * 0.5)
+		## Prefer normal pointing outside the fairway AABB when possible.
+		var center_xz := (hole.bounds_min + hole.bounds_max) * 0.5
+		if (mid - center_xz).dot(n) < 0.0:
+			n = -n
+			mid = (a + b) * 0.5 + n * (WALL_THICK * 0.5)
 		var mesh := MeshInstance3D.new()
 		var box := BoxMesh.new()
-		box.size = Vector3(length, 0.35, 0.08)
+		box.size = Vector3(length, 0.35, WALL_THICK)
 		mesh.mesh = box
 		var mat := StandardMaterial3D.new()
 		mat.albedo_color = Color(0.82, 0.78, 0.7, 1)
 		mesh.material_override = mat
 		mesh.position = _pivot.to_local(Vector3(mid.x, 0.15, mid.y))
-		mesh.rotation.y = atan2(delta.x, delta.y)
+		mesh.rotation.y = yaw_for_xz_delta(delta)
 		_course_root.add_child(mesh)
 
 
@@ -262,8 +302,8 @@ func _add_cup(hole: HoleDef) -> void:
 
 func _add_tee_marker(hole: HoleDef) -> void:
 	var tee := hole.tee_xz()
-	var m := _make_cylinder(Color(0.95, 0.9, 0.4, 1), 0.12, 0.02)
-	m.position = _pivot.to_local(Vector3(tee.x, 0.01, tee.y))
+	var m := _make_cylinder(Color(0.55, 0.72, 0.45, 1), 0.14, 0.015)
+	m.position = _pivot.to_local(Vector3(tee.x, 0.008, tee.y))
 	_course_root.add_child(m)
 
 
@@ -329,12 +369,16 @@ func _make_cylinder(color: Color, radius: float, height: float) -> MeshInstance3
 
 
 func _make_arrow() -> MeshInstance3D:
+	## Elongated on local +X; yaw_for_xz_delta aims it on the fairway.
 	var mesh := MeshInstance3D.new()
 	var box := BoxMesh.new()
-	box.size = Vector3(0.08, 0.04, 0.7)
+	box.size = Vector3(0.9, 0.035, 0.07)
 	mesh.mesh = box
 	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color(1.0, 0.9, 0.2, 1)
+	mat.albedo_color = Color(1.0, 0.85, 0.15, 1)
+	mat.emission_enabled = true
+	mat.emission = Color(0.6, 0.45, 0.05, 1)
+	mat.emission_energy_multiplier = 0.4
 	mesh.material_override = mat
 	return mesh
 

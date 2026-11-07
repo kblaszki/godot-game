@@ -56,14 +56,14 @@ flowchart TD
 
 ## Course3D
 
-Proxy-faithful meshes: fairway box, wall boxes, bunker cylinders, cup+flag, tee marker. Hole 6 shows a tilted pad mesh over the damp region. Trees sit outside bounds. Camera pitch ~40°, LMB orbit, MMB/RMB pan, wheel dolly, Fit to hole AABB. During `moving`, focus leans toward the ball (`FOLLOW_LEAN`).
+Proxy-faithful meshes: fairway box, wall boxes (BoxMesh along +X, yaw `atan2(-dz, dx)` so segments match sim), bunker cylinders, cup+flag, muted tee disc. Hole 6 shows a tilted pad mesh over the damp region. Trees sit outside bounds. Camera pitch ~40°, LMB-drag orbit, click (no drag) aims via camera→Y=0 ray, MMB/RMB pan, wheel dolly, Fit biases focus toward the tee. During `moving`, focus leans toward the ball (`FOLLOW_LEAN`). Sun casts shadows.
 
 Headless skips mesh creation (`DisplayServer` name `headless`).
 
 ## HUD / input
 
 - Top: hole / par / stroke / player; Fit
-- Aim: mouse motion maps to XZ aim; yellow arrow on green
+- Aim: click fairway → ray to green; yellow shaft arrow from ball
 - Power: hold Space, release → `stroke()`
-- Tab scorecard; Esc pause; feed line at bottom
+- Tab scorecard; Esc pause; short feed tip
 - Bots: `bot_act` on cooldown; ball ticks while `moving`
