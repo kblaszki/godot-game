@@ -46,3 +46,15 @@ Adapted upstream skill names (sources → local skills):
                                            and docs/how-to/write-headless-tests.md
 
 See docs/reference/agent-skills.md for the full skill map.
+
+------------------------------------------------------------------------
+
+Vendored pixel-art tool and adapted skill from:
+
+  https://github.com/crsolver/claude-pxl
+  Copyright (c) 2026 crsolver
+  Licensed under the MIT License (see tools/pxl/LICENSE)
+
+Pinned at tools/pxl/ (see tools/pxl/VENDOR.md for SHA and update steps).
+Agent workflow rewritten as .cursor/skills/pixel-art-pxl/ (SKILL.md +
+references/reference.md + references/lighting.md).
