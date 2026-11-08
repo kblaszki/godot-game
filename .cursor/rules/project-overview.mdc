@@ -31,6 +31,7 @@ Godot 4.x GDScript game lab. Shared code lives in `engine/` (`class_name` / `Ref
 - Engine work: `docs/explanation/architecture.md`, `docs/reference/source-layout.md`
 - Existing game: `games/<game>/docs/index.md`
 - New game: `docs/tutorials/create_new_game.md`, `docs/how-to/add-a-game.md`, and the `add-game` skill
+- Agent skills map: `docs/reference/agent-skills.md` (sim/app/genre/workflow playbooks under `.cursor/skills/`)
 - Tests: `docs/how-to/write-headless-tests.md`
 
 ## Verify

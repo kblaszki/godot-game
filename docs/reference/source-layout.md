@@ -2,10 +2,11 @@
 title: Source layout
 diataxis: reference
 audience: [ai, human]
-related_code: [project.godot, engine/, lab/, games/, tests/, docs/, AGENTS.md, addons/gut/, .gutconfig.json]
+related_code: [project.godot, engine/, lab/, games/, tests/, docs/, AGENTS.md, NOTICE, .cursor/skills/, addons/gut/, .gutconfig.json]
 related_docs:
   - ../index.md
   - ../explanation/architecture.md
+  - agent-skills.md
   - engine-core.md
   - engine-input.md
   - engine-save.md
@@ -13,7 +14,7 @@ related_docs:
   - engine-scene-stack.md
   - lab-shell.md
 keywords: [layout, inventory, paths, tests]
-last_reviewed: 2026-11-07
+last_reviewed: 2026-11-08
 ---
 
 # Source layout
@@ -27,6 +28,7 @@ Inventory of the lab tree. Update this page when paths are added, removed, or re
 |------|------|
 | `project.godot` | Godot 4.x lab; GUT enabled; InputMap `pong_*` / `snake_*`; `run/main_scene` is `lab/lab_host.tscn` |
 | `AGENTS.md` | Tool-neutral agent summary |
+| `NOTICE` | Apache-2.0 attribution for adapted Agent Skills |
 | `engine/` | Shared headless GDScript libraries |
 | `lab/` | LayeredHost, lab host, launcher, WindowApplier |
 | `games/` | Per-game `sim/`, `app/`, `docs/` |
@@ -38,7 +40,7 @@ Inventory of the lab tree. Update this page when paths are added, removed, or re
 | `.gutconfig.json` | GUT dirs/prefix/suffix/`should_exit` for CLI and CI |
 | `.github/workflows/ci.yml` | Ubuntu smoke + GUT (Godot 4.3) |
 | `.cursor/rules/` | Cursor rules |
-| `.cursor/skills/` | Cursor skills |
+| `.cursor/skills/` | Cursor skills (scaffold + Headless First gamedev playbooks; map: [agent-skills.md](agent-skills.md)) |
 
 ## Lab
 

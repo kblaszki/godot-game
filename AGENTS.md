@@ -20,7 +20,7 @@ On a fresh clone (or after adding a `class_name`), run `godot --path . --headles
 | A new game | [`docs/tutorials/create_new_game.md`](docs/tutorials/create_new_game.md), [`docs/how-to/add-a-game.md`](docs/how-to/add-a-game.md) |
 | Tests | [`docs/how-to/write-headless-tests.md`](docs/how-to/write-headless-tests.md) |
 
-The map of engine docs is [`docs/index.md`](docs/index.md). Each game has its own Diátaxis tree under `games/<game>/docs/`. Prefer real type and path names from this repo. Do not invent generic managers (`SceneManager`, `InputManager`, …) unless they are documented here.
+The map of engine docs is [`docs/index.md`](docs/index.md). Cursor Agent Skills (Headless First rewrites) are mapped in [`docs/reference/agent-skills.md`](docs/reference/agent-skills.md) with attribution in [`NOTICE`](NOTICE). Each game has its own Diátaxis tree under `games/<game>/docs/`. Prefer real type and path names from this repo. Do not invent generic managers (`SceneManager`, `InputManager`, …) unless they are documented here.
 
 ## Non-negotiables
 

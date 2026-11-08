@@ -6,6 +6,7 @@ related_code: [project.godot, engine/, lab/, games/, tests/]
 related_docs:
   - explanation/architecture.md
   - reference/source-layout.md
+  - reference/agent-skills.md
   - reference/lab-shell.md
   - reference/engine-input.md
   - reference/engine-save.md
@@ -15,7 +16,7 @@ related_docs:
   - how-to/add-a-game.md
   - tutorials/create_new_game.md
 keywords: [index, diataxis, map]
-last_reviewed: 2026-11-05
+last_reviewed: 2026-11-08
 ---
 
 # Documentation map
@@ -53,6 +54,7 @@ Cross-game and engine docs for the **godot-game** lab (Godot 4.x, typed GDScript
 | [engine-input.md](reference/engine-input.md) | Headless `InputState` for action held/edges |
 | [engine-save.md](reference/engine-save.md) | `HighScoreTable`, `ScoreStore`, `LabSettings`, `SettingsStore` |
 | [engine-audio.md](reference/engine-audio.md) | `NullAudio` port and `GodotAudio` lab adapter |
+| [agent-skills.md](reference/agent-skills.md) | Cursor Agent Skills map (sim/app/genre/workflow) |
 
 ## Game documentation
 
