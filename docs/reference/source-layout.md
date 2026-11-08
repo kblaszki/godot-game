@@ -68,7 +68,7 @@ Inventory of the lab tree. Update this page when paths are added, removed, or re
 | breakout | `breakout_config.gd`, `breakout_sim.gd` | host + menu/play/pause + `assets/` | `games/breakout/docs/` | `breakout_sim_test.gd`, `breakout_host_flow_test.gd` |
 | districts | board/player/config/sim/bot/chance/gadgets/network stubs | host + setup/play/pause + baker + `board_3d` + `district_audio` + `assets/` | `games/districts/docs/` | `district_sim_test.gd`, `district_host_flow_test.gd`, `district_tile_baker_test.gd` |
 | minigolf | config/hole/course/ball/score/sim/bot | host + menu/setup/play/pause/results + `course_3d` + audio | `games/minigolf/docs/` | physics/sim/bot/host_flow |
-| gridward | `gridward_config.gd`, `map_def.gd`, `enemy_def.gd`, `tower_def.gd`, `wave_def.gd`, `gridward_catalog.gd`, `enemy_state.gd`, `status_effect.gd`, `tower_state.gd`, `projectile_state.gd`, `gridward_sim.gd`, `gridward_bot.gd`, `gridward_events.gd` | host extends LayeredHost + menu/play stub | `games/gridward/docs/` (spec + `plans/` 00–12 + reference/explanation, including `reference/balance.md`) | `gridward_catalog_test.gd`, `gridward_sim_test.gd`, `gridward_towers_test.gd`, `gridward_economy_test.gd`, `gridward_lane_holds_test.gd`, `gridward_roster_test.gd`, `gridward_bot_test.gd`, `gridward_host_flow_test.gd` |
+| gridward | `gridward_config.gd`, `map_def.gd`, `enemy_def.gd`, `tower_def.gd`, `wave_def.gd`, `gridward_catalog.gd`, `enemy_state.gd`, `status_effect.gd`, `tower_state.gd`, `projectile_state.gd`, `gridward_sim.gd`, `gridward_bot.gd`, `gridward_events.gd` | host extends LayeredHost + menu/play + `board_3d` | `games/gridward/docs/` (spec + `plans/` 00–12 + reference/explanation, including `reference/balance.md`) | `gridward_catalog_test.gd`, `gridward_sim_test.gd`, `gridward_towers_test.gd`, `gridward_economy_test.gd`, `gridward_lane_holds_test.gd`, `gridward_roster_test.gd`, `gridward_bot_test.gd`, `gridward_host_flow_test.gd`, `gridward_board3d_test.gd` |
 
 ## Engine modules
 
@@ -128,3 +128,4 @@ Inventory of the lab tree. Update this page when paths are added, removed, or re
 | `tests/games/gridward/gridward_roster_test.gd` | armor, air targeting, frost slow, beam ramp, swarm count, burn |
 | `tests/games/gridward/gridward_bot_test.gd` | Meadow Normal clear, same-seed, seed sweep |
 | `tests/games/gridward/gridward_host_flow_test.gd` | menu to play; quit returns to lab |
+| `tests/games/gridward/gridward_board3d_test.gd` | cell center, world roundtrip, yaw, headless board sync |
