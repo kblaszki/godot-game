@@ -6,12 +6,15 @@ related_code:
   - games/gridward/app/host.gd
   - games/gridward/app/menu.gd
   - games/gridward/app/play.gd
+  - games/gridward/sim/gridward_sim.gd
+  - games/gridward/sim/enemy_state.gd
+  - games/gridward/sim/gridward_events.gd
 related_docs:
   - ../index.md
   - ../reference/app.md
   - ../reference/sim.md
   - ../spec.md
-keywords: [gridward, flow, menu, play, build, wave]
+keywords: [gridward, flow, menu, play, build, wave, victory, defeat]
 last_reviewed: 2026-11-08
 ---
 
@@ -27,11 +30,36 @@ stateDiagram-v2
   play --> labLauncher: Quit
 ```
 
-Sim phases below are names only. No wave loop runs in this scaffold.
+## Match phases
+
+`GridwardSim` owns the match. `paused` is app-only: the host stops calling `step()`. The sim does not model pause.
 
 ```mermaid
 stateDiagram-v2
   [*] --> build
   build --> wave: startWave
-  wave --> build: moreWaves
+  wave --> waveClear: allSpawnedAndDead
+  wave --> defeat: livesZero
+  waveClear --> build: moreWaves
+  waveClear --> victory: lastWave
+  build --> defeat: livesZero
+  victory --> [*]
+  defeat --> [*]
+```
+
+`start_wave()` moves `build` to `wave`. Each `step()` during `wave` spawns entries that are due, moves enemies along the waypoint polyline, and runs an empty tower acquire. A leak removes that enemy and loses one life. Lives at 0 set `defeat` in that same step, including when the leaking enemy was the last one alive.
+
+When every entry has spawned and no enemies remain, that step enters `waveClear`. The next `step()` leaves it: `build` and the next wave index when waves remain, or `victory` on the last wave. `start_wave()` returns false outside `build`.
+
+```mermaid
+sequenceDiagram
+  participant Host
+  participant Sim as GridwardSim
+  Host->>Sim: start_wave()
+  Host->>Sim: step()
+  Sim->>Sim: spawnDue
+  Sim->>Sim: moveEnemies
+  Sim->>Sim: acquireTargets
+  Sim->>Sim: checkLeakAndClear
+  Host->>Sim: drain_events()
 ```

@@ -9,26 +9,40 @@ related_code:
   - games/gridward/sim/tower_def.gd
   - games/gridward/sim/wave_def.gd
   - games/gridward/sim/gridward_catalog.gd
+  - games/gridward/sim/enemy_state.gd
+  - games/gridward/sim/gridward_sim.gd
+  - games/gridward/sim/gridward_events.gd
   - tests/games/gridward/gridward_catalog_test.gd
+  - tests/games/gridward/gridward_sim_test.gd
 related_docs:
   - ../index.md
   - ../spec.md
   - ../explanation/flow.md
   - ../../../../docs/explanation/architecture.md
-keywords: [gridward, sim, MapDef, GridwardCatalog, WaveDef, Meadow]
+keywords: [gridward, sim, MapDef, GridwardCatalog, GridwardSim, WaveDef, Meadow, leak]
 last_reviewed: 2026-11-08
 ---
 
 # Gridward sim
 
-Headless content for the campaign. `GridwardCatalog` builds defs in code. A match reads those defs; this package does not step time. Scripts under `games/gridward/sim/` are `RefCounted` and stay free of `Node`, the scene tree, wall-clock `Time`, unseeded RNG, and `FileAccess`.
+Headless content and match loop. `GridwardCatalog` builds defs in code. `GridwardSim` steps the match from those defs. Scripts under `games/gridward/sim/` are `RefCounted` and stay free of `Node`, the scene tree, wall-clock `Time`, unseeded RNG, and `FileAccess`.
 
-Product numbers are copied from [spec.md](../spec.md) §§5–9. Phase names for a running match stay in [flow.md](../explanation/flow.md).
+Product numbers are copied from [spec.md](../spec.md) §§5–9. Phase transitions are drawn in [flow.md](../explanation/flow.md).
 
 ## Ownership
 
 ```mermaid
 classDiagram
+  class GridwardSim {
+    +start_wave()
+    +step()
+    +drain_events()
+    +get_phase()
+    +get_gold()
+    +get_lives()
+    +get_wave_index()
+    +get_enemies()
+  }
   class GridwardCatalog {
     +build_meadow()
     +enemy(id)
@@ -47,13 +61,98 @@ classDiagram
   class EnemyDef
   class TowerDef
   class GridwardConfig
+  class EnemyState
+  class GridwardEvents
+  class SeededRng
+  GridwardSim --> MapDef
+  GridwardSim --> GridwardCatalog
+  GridwardSim --> GridwardConfig
+  GridwardSim --> EnemyState
+  GridwardSim --> GridwardEvents
+  GridwardSim --> SeededRng
   GridwardCatalog --> MapDef
   GridwardCatalog --> EnemyDef
   GridwardCatalog --> TowerDef
   MapDef --> WaveDef
 ```
 
-`enemy(id)` and `tower(id)` return a new def on each call. An unknown id returns `null`. `GridwardConfig` is a separate tunable bag (Normal defaults). The catalog does not load files.
+`enemy(id)` and `tower(id)` return a new def on each call. An unknown id returns `null`. `GridwardConfig` is a separate tunable bag (Normal defaults). The catalog does not load files. The sim constructs its own `GridwardConfig` and a `SeededRng` from the constructor seed.
+
+## GridwardSim
+
+```gdscript
+enum Phase { BUILD, WAVE, WAVE_CLEAR, VICTORY, DEFEAT }
+func _init(map: MapDef, catalog: GridwardCatalog, seed: int) -> void
+func get_phase() -> int
+func get_gold() -> int
+func get_lives() -> int
+func get_wave_index() -> int
+func start_wave() -> bool
+func step() -> void
+func drain_events() -> Array
+func get_enemies() -> Array
+```
+
+| Method | Behavior |
+|--------|----------|
+| `_init` | Copies `starting_gold` and `starting_lives`. Phase is `BUILD`, or `DEFEAT` when lives start at 0 or below. Owns `SeededRng(seed)` and a default `GridwardConfig`. |
+| `get_phase` | `Phase` value as an int. |
+| `get_gold` | Current gold. Leaks do not change it. |
+| `get_lives` | Lives remaining after leaks. |
+| `get_wave_index` | Active wave during `WAVE` and `WAVE_CLEAR`. Next wave during `BUILD` after a clear. `0` before the first wave. Stays on the last index at `VICTORY`. |
+| `start_wave` | From `BUILD` only, when lives are above 0 and a wave remains. Enters `WAVE`, schedules that wave, emits `wave_started`. Returns false otherwise. |
+| `step` | One `FixedTick.SEC` of the wave, or the exit from `WAVE_CLEAR`. No-op in `BUILD`, `VICTORY`, and `DEFEAT`. |
+| `drain_events` | Returns queued event dictionaries and clears the queue. |
+| `get_enemies` | Shallow copy of living `EnemyState`s in spawn order. |
+
+`step` during `WAVE`, in order: spawn entries whose tick is due, move every living enemy, acquire targets (empty), then either enter `WAVE_CLEAR` or advance the wave tick. Enemies move on the tick they spawn. Spawn position in the event is the first waypoint, before that tick's move.
+
+### Spawn schedule
+
+For each entry, enemy `i` (0-based) is due at `delay_ticks + i * spacing_ticks`. Entries are walked in order. Equal ticks keep that order. When `spawn_jitter_ticks` is greater than 0, each due tick adds `SeededRng.randi_range(-jitter, jitter)` and clamps at 0. The default is 0, so v1 waves do not draw from the generator.
+
+Unknown `enemy_id` values consume the slot and spawn nothing.
+
+### Path and leaks
+
+`EnemyState.advance(distance, waypoints)` walks the polyline. `distance` is `speed * FixedTick.SEC`. When a segment ends, leftover distance continues onto the next segment in the same call. Reaching the last waypoint leaks: the enemy is removed, lives drop by 1 (not below 0), and an `enemy_leaked` event records the new total.
+
+Lives at 0 set `DEFEAT` during that move. That step does not enter `WAVE_CLEAR` or `VICTORY`. Later `step` calls do not move the survivors.
+
+### Wave clear
+
+`WAVE_CLEAR` begins on the step where every slot has spawned and no enemies remain. The following `step()` goes to `BUILD` and increments `wave_index` when another wave exists, or to `VICTORY` on the last wave.
+
+Spawned HP is `maxi(roundi(base_hp * pow(hp_scale, wave_index) * difficulty_hp), 1)` using the sim's config (Normal: `hp_scale` 1.12, `difficulty_hp` 1).
+
+## EnemyState
+
+| Field | Meaning |
+|-------|---------|
+| `id` | Spawn order, starting at 0 for the match |
+| `enemy_id` | `EnemyDef.id` |
+| `hp` | Scaled hit points at spawn |
+| `speed` | Cells per second, copied from the def |
+| `position` | Cell-space point on the polyline |
+| `segment` | Waypoint index that starts the current segment |
+| `segment_distance` | Cells already traveled on that segment |
+
+`advance(distance: float, waypoints: PackedVector2Array) -> bool` returns true when the enemy has reached the last waypoint.
+
+## GridwardEvents
+
+`type` is a `StringName`.
+
+| Constant | `type` | Fields |
+|----------|--------|--------|
+| `WAVE_STARTED` | `wave_started` | `wave_index` |
+| `ENEMY_SPAWNED` | `enemy_spawned` | `id`, `enemy_id`, `position` |
+| `ENEMY_LEAKED` | `enemy_leaked` | `id`, `enemy_id`, `lives` |
+| `WAVE_CLEARED` | `wave_cleared` | `wave_index` |
+| `VICTORY` | `victory` | |
+| `DEFEAT` | `defeat` | |
+
+Static helpers with those names build the dictionaries. `position` on a spawn is the first waypoint before movement. `lives` on a leak is the total after that leak.
 
 ## GridwardConfig
 
