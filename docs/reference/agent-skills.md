@@ -12,6 +12,7 @@ keywords: [skills, cursor, agent, headless-first, gamedev]
 last_reviewed: 2026-11-08
 ---
 
+
 # Agent skills map
 
 Cursor Agent Skills for this lab live under [`.cursor/skills/`](../../.cursor/skills/).
@@ -76,6 +77,7 @@ flowchart TB
 | [input-systems](../../.cursor/skills/input-systems/SKILL.md) | input-systems | InputState, rebind, buffer |
 | [performance-optimization](../../.cursor/skills/performance-optimization/SKILL.md) | performance-optimization | profiler, draw calls, tick budget |
 | [game-assets](../../.cursor/skills/game-assets/SKILL.md) | create-game-assets | palette, greybox, import |
+| [pixel-art-pxl](../../.cursor/skills/pixel-art-pxl/SKILL.md) | crsolver/claude-pxl SKILL | sprites, sheets, tiles as `.px.js` |
 
 ## Genres and workflows
 

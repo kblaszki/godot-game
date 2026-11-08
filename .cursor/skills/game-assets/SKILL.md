@@ -18,15 +18,19 @@ rewritten for godot-game Headless First.
 
 - Use for visual targets, palettes, import presets, Kenney-style packs (respect
   their licenses under `assets/LICENSE*`).
+- For **2D pixel sprites / tiles / icons as code**, use `pixel-art-pxl` (vendored
+  `tools/pxl` DSL) instead of hand-painting PNGs.
 - Not for implementing rules → sim. Shaders for effects → `godot-shaders`.
 
 ## Workflow
 
 1. Lock a short style brief (palette, silhouette, pixel density / mesh scale).
 2. Greybox with primitives (`BoxMesh`, CSG for throwaway only) matching sim metrics.
-3. Import: compress modes, filter, mipmaps consistent across a family.
-4. Drop into the real scene (Course3D / Board3D / HUD) for QA — not isolated preview.
-5. Document attribution; don't commit huge binaries without need.
+3. 2D pixel art: write `art/<name>/*.px.js`, build with `pixel-art-pxl`, import via
+   `PxlSheet` + nearest filter (see `docs/how-to/make-pixel-art.md`).
+4. Import: compress modes, filter, mipmaps consistent across a family.
+5. Drop into the real scene (Course3D / Board3D / HUD / Pixel Gallery) for QA.
+6. Document attribution; don't commit huge binaries without need.
 
 ## Patterns
 
