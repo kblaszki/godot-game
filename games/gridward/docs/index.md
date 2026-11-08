@@ -8,6 +8,7 @@ related_code:
 related_docs:
   - spec.md
   - reference/sim.md
+  - reference/balance.md
   - reference/app.md
   - explanation/flow.md
   - plans/00-roadmap.md
@@ -31,7 +32,8 @@ under [plans/](plans/).
 
 | Doc | Purpose |
 |-----|---------|
-| [sim.md](reference/sim.md) | Config, defs, and the Meadow catalog |
+| [sim.md](reference/sim.md) | Config, defs, Meadow catalog, and match API |
+| [balance.md](reference/balance.md) | Bounty, bonuses, upgrade curve, Meadow lane-holds |
 | [app.md](reference/app.md) | Host, menu, play stub |
 
 ## Explanation

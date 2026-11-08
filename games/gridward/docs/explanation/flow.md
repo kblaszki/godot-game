@@ -13,6 +13,7 @@ related_docs:
   - ../index.md
   - ../reference/app.md
   - ../reference/sim.md
+  - ../reference/balance.md
   - ../spec.md
 keywords: [gridward, flow, menu, play, build, wave, victory, defeat]
 last_reviewed: 2026-11-08
@@ -49,7 +50,7 @@ stateDiagram-v2
 
 `start_wave()` moves `build` to `wave`. Each `step()` during `wave` spawns entries that are due, moves enemies along the waypoint polyline, then advances projectiles and lets ready towers acquire and fire. A leak removes that enemy and loses one life. Lives at 0 set `defeat` in that same step, including when the leaking enemy was the last one alive.
 
-When every entry has spawned and no enemies remain, that step enters `waveClear`. The next `step()` leaves it: `build` and the next wave index when waves remain, or `victory` on the last wave. `start_wave()` returns false outside `build`.
+When every entry has spawned and no enemies remain, that step enters `waveClear` and pays the wave-clear bonus. A kill pays that enemy's catalog bounty. The next `step()` leaves `waveClear`: `build` plus the intermission timer and the next wave index when waves remain, or `victory` on the last wave. `start_wave()` during the timer pays the early-call bonus from [balance.md](../reference/balance.md). `start_wave()` returns false outside `build`. The opening build has no timer.
 
 ```mermaid
 sequenceDiagram

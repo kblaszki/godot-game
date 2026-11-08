@@ -19,8 +19,8 @@ const ENEMY_HIT: StringName = &"enemy_hit"
 const ENEMY_KILLED: StringName = &"enemy_killed"
 
 
-static func wave_started(wave_index: int) -> Dictionary:
-	return {"type": WAVE_STARTED, "wave_index": wave_index}
+static func wave_started(wave_index: int, early_bonus: int) -> Dictionary:
+	return {"type": WAVE_STARTED, "wave_index": wave_index, "early_bonus": early_bonus}
 
 
 static func enemy_spawned(id: int, enemy_id: StringName, position: Vector2) -> Dictionary:
@@ -41,8 +41,8 @@ static func enemy_leaked(id: int, enemy_id: StringName, lives: int) -> Dictionar
 	}
 
 
-static func wave_cleared(wave_index: int) -> Dictionary:
-	return {"type": WAVE_CLEARED, "wave_index": wave_index}
+static func wave_cleared(wave_index: int, bonus: int, gold: int) -> Dictionary:
+	return {"type": WAVE_CLEARED, "wave_index": wave_index, "bonus": bonus, "gold": gold}
 
 
 static func victory() -> Dictionary:
@@ -121,9 +121,11 @@ static func enemy_hit(id: int, damage: int, hp: int, tower_entity_id: int) -> Di
 	}
 
 
-static func enemy_killed(id: int, enemy_id: StringName) -> Dictionary:
+static func enemy_killed(id: int, enemy_id: StringName, bounty: int, gold: int) -> Dictionary:
 	return {
 		"type": ENEMY_KILLED,
 		"id": id,
 		"enemy_id": enemy_id,
+		"bounty": bounty,
+		"gold": gold,
 	}

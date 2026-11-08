@@ -68,7 +68,7 @@ func test_leak_should_decrement_lives_and_remove_enemy() -> void:
 		guard += 1
 	assert_eq(sim.get_enemies().size(), 0)
 	assert_eq(sim.get_lives(), 4)
-	assert_eq(sim.get_gold(), 40)
+	assert_eq(sim.get_gold(), 40 + 25)
 	assert_eq(sim.get_phase(), GridwardSim.Phase.WAVE_CLEAR)
 	assert_eq(sim.get_wave_index(), 0)
 	assert_false(sim.start_wave())

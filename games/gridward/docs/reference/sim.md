@@ -17,12 +17,15 @@ related_code:
   - tests/games/gridward/gridward_catalog_test.gd
   - tests/games/gridward/gridward_sim_test.gd
   - tests/games/gridward/gridward_towers_test.gd
+  - tests/games/gridward/gridward_economy_test.gd
+  - tests/games/gridward/gridward_lane_holds_test.gd
 related_docs:
   - ../index.md
   - ../spec.md
+  - balance.md
   - ../explanation/flow.md
   - ../../../../docs/explanation/architecture.md
-keywords: [gridward, sim, MapDef, GridwardCatalog, GridwardSim, WaveDef, Meadow, leak, towers, targeting]
+keywords: [gridward, sim, MapDef, GridwardCatalog, GridwardSim, WaveDef, Meadow, leak, towers, targeting, economy, early-call]
 last_reviewed: 2026-11-08
 ---
 
@@ -38,6 +41,8 @@ Product numbers are copied from [spec.md](../spec.md) §§5–9. Phase transitio
 classDiagram
   class GridwardSim {
     +start_wave()
+    +can_early_call()
+    +early_call_bonus()
     +step()
     +place_tower(cell, towerId)
     +sell_tower(id)
@@ -100,6 +105,8 @@ func get_phase() -> int
 func get_gold() -> int
 func get_lives() -> int
 func get_wave_index() -> int
+func can_early_call() -> bool
+func early_call_bonus() -> int
 func start_wave() -> bool
 func step() -> void
 func drain_events() -> Array
@@ -116,11 +123,13 @@ func set_targeting(tower_entity_id: int, mode: StringName) -> void
 |--------|----------|
 | `_init` | Copies `starting_gold` and `starting_lives`. Phase is `BUILD`, or `DEFEAT` when lives start at 0 or below. Owns `SeededRng(seed)` and a default `GridwardConfig`. |
 | `get_phase` | `Phase` value as an int. |
-| `get_gold` | Current gold. Leaks do not change it. |
+| `get_gold` | Current gold. Kills, wave clears, and early calls add to it. A leak leaves it unchanged. |
 | `get_lives` | Lives remaining after leaks. |
 | `get_wave_index` | Active wave during `WAVE` and `WAVE_CLEAR`. Next wave during `BUILD` after a clear. `0` before the first wave. Stays on the last index at `VICTORY`. |
-| `start_wave` | From `BUILD` only, when lives are above 0 and a wave remains. Enters `WAVE`, schedules that wave, emits `wave_started`. Returns false otherwise. |
-| `step` | One `FixedTick.SEC` of the wave, or the exit from `WAVE_CLEAR`. No-op in `BUILD`, `VICTORY`, and `DEFEAT`. |
+| `can_early_call` | True in `BUILD` when the post-clear timer remains, lives are above 0, and a wave remains. False during the opening build. |
+| `early_call_bonus` | Gold `start_wave` will add. `min(cap, floor(remaining / ticks_per_gold))`, or 0 when `can_early_call` is false. |
+| `start_wave` | From `BUILD` only, when lives are above 0 and a wave remains. Adds `early_call_bonus`, clears the timer, enters `WAVE`, schedules that wave, emits `wave_started`. Returns false otherwise. |
+| `step` | One `FixedTick.SEC` of the wave, or the exit from `WAVE_CLEAR`. In `BUILD`, decrements a pending intermission timer by one. No-op in `VICTORY`, `DEFEAT`, and in `BUILD` when the timer is already 0. |
 | `drain_events` | Returns queued event dictionaries and clears the queue. |
 | `get_enemies` | Shallow copy of living `EnemyState`s in spawn order. |
 | `get_towers` | Shallow copy of placed `TowerState`s in place order. |
@@ -168,7 +177,7 @@ Equal metrics keep the lowest entity id.
 
 `hitscan` (bolt, and frost or flak without their later specials) applies damage on the fire step. `projectile` (mortar) flies, then damages every engageable enemy within `splash_radius` of the impact, including the aim point. Full damage, no falloff. `continuous` (beam) does not fire; ramp is not implemented.
 
-Each hit subtracts the enemy's armor and deals at least `min_damage`. HP does not go below 0. A kill removes the enemy and emits `enemy_killed`. Gold is unchanged on a kill. Entering `WAVE_CLEAR` drops shells still in flight.
+Each hit subtracts the enemy's armor and deals at least `min_damage`. HP does not go below 0. A kill removes the enemy, adds `EnemyDef.bounty` once (not scaled by the wave), and emits `enemy_killed`. Entering `WAVE_CLEAR` drops shells still in flight and adds the wave-clear bonus.
 
 ### Spawn schedule
 
@@ -184,7 +193,7 @@ Lives at 0 set `DEFEAT` during that move. That step does not enter `WAVE_CLEAR` 
 
 ### Wave clear
 
-`WAVE_CLEAR` begins on the step where every slot has spawned and no enemies remain. The following `step()` goes to `BUILD` and increments `wave_index` when another wave exists, or to `VICTORY` on the last wave.
+`WAVE_CLEAR` begins on the step where every slot has spawned and no enemies remain. That step adds `wave_clear_bonus_base + wave_clear_bonus_per_index * wave_index` gold. The following `step()` goes to `BUILD`, starts the intermission timer, and increments `wave_index` when another wave exists, or to `VICTORY` on the last wave. Victory does not start a timer. Payout tables and the Meadow lane-hold loadout are in [balance.md](balance.md). Lane-hold math is `path_coverage_length`, `tower_dps`, `estimated_lane_damage`, and `scaled_enemy_hp`. Upgrade prices go through `upgrade_cost`.
 
 Spawned HP is `maxi(roundi(base_hp * pow(hp_scale, wave_index) * difficulty_hp), 1)` using the sim's config (Normal: `hp_scale` 1.12, `difficulty_hp` 1).
 
@@ -218,10 +227,10 @@ One shell. `SPEED` is 6 cells per second. `position` and `destination` are cell-
 
 | Constant | `type` | Fields |
 |----------|--------|--------|
-| `WAVE_STARTED` | `wave_started` | `wave_index` |
+| `WAVE_STARTED` | `wave_started` | `wave_index`, `early_bonus` |
 | `ENEMY_SPAWNED` | `enemy_spawned` | `id`, `enemy_id`, `position` |
 | `ENEMY_LEAKED` | `enemy_leaked` | `id`, `enemy_id`, `lives` |
-| `WAVE_CLEARED` | `wave_cleared` | `wave_index` |
+| `WAVE_CLEARED` | `wave_cleared` | `wave_index`, `bonus`, `gold` |
 | `VICTORY` | `victory` | |
 | `DEFEAT` | `defeat` | |
 | `TOWER_PLACED` | `tower_placed` | `id`, `tower_id`, `cell`, `gold` |
@@ -231,9 +240,9 @@ One shell. `SPEED` is 6 cells per second. `position` and `destination` are cell-
 | `PROJECTILE_SPAWNED` | `projectile_spawned` | `id`, `tower_entity_id`, `position`, `target_id` |
 | `PROJECTILE_IMPACT` | `projectile_impact` | `id`, `position`, `splash_radius` |
 | `ENEMY_HIT` | `enemy_hit` | `id`, `damage`, `hp`, `tower_entity_id` |
-| `ENEMY_KILLED` | `enemy_killed` | `id`, `enemy_id` |
+| `ENEMY_KILLED` | `enemy_killed` | `id`, `enemy_id`, `bounty`, `gold` |
 
-Static helpers with those names build the dictionaries. `position` on a spawn is the first waypoint before movement. `lives` on a leak is the total after that leak. On tower events, `id` is the tower entity id and `gold` is the total after the change. On `tower_fired`, `id` is the tower and `target_id` is the enemy. On projectile events, `id` is the shell. On `enemy_hit` and `enemy_killed`, `id` is the enemy. `hp` is the value after the hit. A kill does not add bounty.
+Static helpers with those names build the dictionaries. `position` on a spawn is the first waypoint before movement. `lives` on a leak is the total after that leak. On tower events, `id` is the tower entity id and `gold` is the total after the change. On `tower_fired`, `id` is the tower and `target_id` is the enemy. On projectile events, `id` is the shell. On `enemy_hit` and `enemy_killed`, `id` is the enemy. `hp` is the value after the hit. `bounty` is the catalog bounty added for that kill, and `gold` is the total after the bounty. `early_bonus` on `wave_started` is the early-call gold added for that start (0 on the opening wave). `bonus` on `wave_cleared` is the clear payout, and `gold` is the total after it.
 
 ## GridwardConfig
 
@@ -245,6 +254,7 @@ Static helpers with those names build the dictionaries. `position` on a spawn is
 | `wave_clear_bonus_per_index` | 5 | added once per wave index |
 | `early_call_ticks_per_gold` | 30 | `floor(remaining_ticks / this)` |
 | `early_call_gold_cap` | 40 | early-call gold cap |
+| `build_timer_ticks` | 1500 | post-clear intermission; opening build stays at 0 |
 | `upgrade_cost_factor` | 0.75 | `round(base_cost * factor * pow(growth, t))` |
 | `upgrade_cost_growth` | 1.55 | upgrade curve base |
 | `tier_damage_scale` | 1.35 | damage growth per tier above 0 |

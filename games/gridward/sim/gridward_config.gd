@@ -14,6 +14,9 @@ var wave_clear_bonus_per_index: int = 5
 ## Early-call gold: min(cap, floor(remaining_ticks / ticks_per_gold)).
 var early_call_ticks_per_gold: int = 30
 var early_call_gold_cap: int = 40
+## Build intermission after a wave clear, in ticks. The opening build has none.
+## 1500 ticks is 25 s, so a full timer pays the cap (floor(1500 / 30) = 50).
+var build_timer_ticks: int = 1500
 ## Upgrade cost tier t → t+1: round(base_cost * factor * pow(growth, t)).
 var upgrade_cost_factor: float = 0.75
 var upgrade_cost_growth: float = 1.55

@@ -24,6 +24,8 @@ var _events: Array[Dictionary] = []
 ## Flat spawn list sorted by tick, then by schedule order.
 var _spawns: Array[Dictionary] = []
 var _spawn_cursor: int = 0
+## Ticks left on the post-clear intermission. Zero during the opening build.
+var _build_ticks_remaining: int = 0
 
 
 func _init(map: MapDef, catalog: GridwardCatalog, seed: int) -> void:
@@ -55,6 +57,26 @@ func get_wave_index() -> int:
 	return _wave_index
 
 
+## True in BUILD while the post-clear intermission still has ticks left.
+func can_early_call() -> bool:
+	if _phase != Phase.BUILD or _build_ticks_remaining <= 0 or _lives <= 0:
+		return false
+	return _wave_index >= 0 and _wave_index < _map.waves.size()
+
+
+## Gold granted by start_wave during a pending intermission. Zero when can_early_call is false.
+func early_call_bonus() -> int:
+	if not can_early_call():
+		return 0
+	var per := _config.early_call_ticks_per_gold
+	if per <= 0:
+		return 0
+	var raw := floori(float(_build_ticks_remaining) / float(per))
+	if raw > _config.early_call_gold_cap:
+		return _config.early_call_gold_cap
+	return raw
+
+
 func start_wave() -> bool:
 	if _phase != Phase.BUILD:
 		return false
@@ -64,16 +86,23 @@ func start_wave() -> bool:
 		return false
 	if _wave_index < 0 or _wave_index >= _map.waves.size():
 		return false
+	var bonus := early_call_bonus()
+	_gold += bonus
+	_build_ticks_remaining = 0
 	_build_schedule(_map.waves[_wave_index])
 	_wave_tick = 0
 	_phase = Phase.WAVE
-	_events.append(GridwardEvents.wave_started(_wave_index))
+	_events.append(GridwardEvents.wave_started(_wave_index, bonus))
 	return true
 
 
 func step() -> void:
 	if _phase == Phase.WAVE_CLEAR:
 		_leave_wave_clear()
+		return
+	if _phase == Phase.BUILD:
+		if _build_ticks_remaining > 0:
+			_build_ticks_remaining -= 1
 		return
 	if _phase != Phase.WAVE:
 		return
@@ -84,7 +113,9 @@ func step() -> void:
 	if _phase == Phase.WAVE and _all_spawned() and _enemies.is_empty():
 		_phase = Phase.WAVE_CLEAR
 		_projectiles.clear()
-		_events.append(GridwardEvents.wave_cleared(_wave_index))
+		var bonus := _wave_clear_bonus()
+		_gold += bonus
+		_events.append(GridwardEvents.wave_cleared(_wave_index, bonus, _gold))
 		return
 	if _phase == Phase.WAVE:
 		_wave_tick += 1
@@ -246,8 +277,18 @@ func _spawn_due() -> void:
 
 
 func _scaled_hp(base_hp: int) -> int:
-	var scaled := float(base_hp) * pow(_config.hp_scale, float(_wave_index)) * _config.difficulty_hp
-	return maxi(roundi(scaled), 1)
+	return scaled_enemy_hp(base_hp, _wave_index, _config.hp_scale, _config.difficulty_hp)
+
+
+func _wave_clear_bonus() -> int:
+	return _config.wave_clear_bonus_base + _config.wave_clear_bonus_per_index * _wave_index
+
+
+func _kill_bounty(enemy: EnemyState) -> int:
+	var definition := _catalog.enemy(enemy.enemy_id)
+	if definition == null:
+		return 0
+	return definition.bounty
 
 
 func _move_enemies() -> void:
@@ -276,8 +317,64 @@ func _sell_refund(invested: int) -> int:
 
 
 func _upgrade_cost(base_cost: int, tier: int) -> int:
-	var scaled := float(base_cost) * _config.upgrade_cost_factor * pow(_config.upgrade_cost_growth, float(tier))
+	return upgrade_cost(base_cost, tier, _config.upgrade_cost_factor, _config.upgrade_cost_growth)
+
+
+## round(base_cost * factor * pow(growth, tier)) for the step from tier t to t+1.
+static func upgrade_cost(base_cost: int, tier: int, factor: float, growth: float) -> int:
+	var scaled := float(base_cost) * factor * pow(growth, float(tier))
 	return roundi(scaled)
+
+
+## Spawn HP: max(1, round(base * pow(hp_scale, wave_index) * difficulty_hp)).
+static func scaled_enemy_hp(base_hp: int, wave_index: int, hp_scale: float, difficulty_hp: float) -> int:
+	var scaled := float(base_hp) * pow(hp_scale, float(wave_index)) * difficulty_hp
+	return maxi(roundi(scaled), 1)
+
+
+## Hitscan and projectile damage per second. Period is cooldown_ticks steps.
+static func tower_dps(damage: int, cooldown_ticks: int) -> float:
+	if cooldown_ticks <= 0:
+		return 0.0
+	return float(damage) / (float(cooldown_ticks) * FixedTick.SEC)
+
+
+## Spec lane-hold estimate: dps * (coverage_length / enemy_speed).
+static func estimated_lane_damage(dps: float, coverage_length: float, enemy_speed: float) -> float:
+	if enemy_speed <= 0.0:
+		return 0.0
+	return dps * (coverage_length / enemy_speed)
+
+
+## Length of the waypoint polyline that lies within attack_range of origin.
+static func path_coverage_length(waypoints: PackedVector2Array, origin: Vector2, attack_range: float) -> float:
+	if waypoints.size() < 2 or attack_range <= 0.0:
+		return 0.0
+	var total := 0.0
+	var radius_sq := attack_range * attack_range
+	for i in range(waypoints.size() - 1):
+		var start: Vector2 = waypoints[i]
+		var finish: Vector2 = waypoints[i + 1]
+		var delta := finish - start
+		var length := delta.length()
+		if length <= 0.0000001:
+			continue
+		var offset := start - origin
+		var a := delta.dot(delta)
+		var b := 2.0 * offset.dot(delta)
+		var c := offset.dot(offset) - radius_sq
+		var disc := b * b - 4.0 * a * c
+		if disc < 0.0:
+			continue
+		var root := sqrt(disc)
+		var inv := 1.0 / (2.0 * a)
+		var t_enter := (-b - root) * inv
+		var t_leave := (-b + root) * inv
+		var enter := clampf(t_enter, 0.0, 1.0)
+		var leave := clampf(t_leave, 0.0, 1.0)
+		if leave > enter:
+			total += (leave - enter) * length
+	return total
 
 
 func _apply_tier_stats(tower: TowerState) -> void:
@@ -455,7 +552,9 @@ func _damage_enemy(enemy: EnemyState, raw: int, tower_entity_id: int) -> void:
 	var dealt := _apply_damage(enemy, raw)
 	_events.append(GridwardEvents.enemy_hit(enemy.id, dealt, enemy.hp, tower_entity_id))
 	if enemy.hp <= 0:
-		_events.append(GridwardEvents.enemy_killed(enemy.id, enemy.enemy_id))
+		var bounty := _kill_bounty(enemy)
+		_gold += bounty
+		_events.append(GridwardEvents.enemy_killed(enemy.id, enemy.enemy_id, bounty, _gold))
 
 
 ## Armor reduces the hit. Remaining damage is at least GridwardConfig.min_damage.
@@ -492,3 +591,4 @@ func _leave_wave_clear() -> void:
 		return
 	_wave_index += 1
 	_phase = Phase.BUILD
+	_build_ticks_remaining = _config.build_timer_ticks
