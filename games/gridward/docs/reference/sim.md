@@ -9,6 +9,7 @@ related_code:
   - games/gridward/sim/tower_def.gd
   - games/gridward/sim/wave_def.gd
   - games/gridward/sim/gridward_catalog.gd
+  - games/gridward/sim/gridward_progress.gd
   - games/gridward/sim/enemy_state.gd
   - games/gridward/sim/status_effect.gd
   - games/gridward/sim/tower_state.gd
@@ -23,14 +24,16 @@ related_code:
   - tests/games/gridward/gridward_lane_holds_test.gd
   - tests/games/gridward/gridward_roster_test.gd
   - tests/games/gridward/gridward_bot_test.gd
+  - tests/games/gridward/gridward_progress_test.gd
+  - tests/games/gridward/gridward_campaign_test.gd
 related_docs:
   - ../index.md
   - ../spec.md
   - balance.md
   - ../explanation/flow.md
   - ../../../../docs/explanation/architecture.md
-keywords: [gridward, sim, MapDef, GridwardCatalog, GridwardSim, GridwardBot, WaveDef, Meadow, leak, towers, targeting, economy, early-call, armor, status, beam, slow, bot]
-last_reviewed: 2026-11-08
+keywords: [gridward, sim, MapDef, GridwardCatalog, GridwardProgress, GridwardSim, GridwardBot, WaveDef, Meadow, Bend, Skyreach, Bastion, Citadel, stars, difficulty, leak, towers, targeting, economy, early-call, armor, status, beam, slow, bot]
+last_reviewed: 2026-11-09
 ---
 
 # Gridward sim
@@ -62,9 +65,21 @@ classDiagram
     +get_projectiles()
   }
   class GridwardCatalog {
+    +build_map(id)
     +build_meadow()
+    +build_bend()
+    +build_skyreach()
+    +build_bastion()
+    +build_citadel()
     +enemy(id)
     +tower(id)
+  }
+  class GridwardProgress {
+    +stars_for(mapId, difficulty)
+    +is_unlocked(mapId)
+    +record_victory(mapId, difficulty, lives)
+    +capture_state()
+    +apply_state(data)
   }
   class MapDef {
     +waypoints
@@ -103,6 +118,8 @@ classDiagram
   GridwardCatalog --> MapDef
   GridwardCatalog --> EnemyDef
   GridwardCatalog --> TowerDef
+  GridwardProgress --> GridwardCatalog
+  GridwardProgress --> GridwardConfig
   MapDef --> WaveDef
 ```
 
@@ -294,7 +311,15 @@ Static helpers with those names build the dictionaries. `position` on a spawn is
 | `difficulty_hp` | 1.0 | caller-applied HP multiplier |
 | `difficulty_gold` | 1.0 | caller-applied gold multiplier |
 
-Difficulty presets on the type: Easy `EASY_HP` 0.85 / `EASY_GOLD` 1.15, Normal `NORMAL_HP` 1 / `NORMAL_GOLD` 1, Hard `HARD_HP` 1.25 / `HARD_GOLD` 0.9. Assign them onto `difficulty_hp` and `difficulty_gold`.
+Difficulty ids are `easy`, `normal`, and `hard` (`DIFF_EASY`, `DIFF_NORMAL`, `DIFF_HARD`). `for_difficulty(id)` returns a config with the matching multipliers. Unknown ids use Normal.
+
+| Id | `difficulty_hp` | `difficulty_gold` |
+|----|-----------------|-------------------|
+| easy | 0.85 | 1.15 |
+| normal | 1 | 1 |
+| hard | 1.25 | 0.9 |
+
+`scaled_gold(amount, difficulty_gold)` is the starting gold for that match. It uses hundredths so Easy 120 becomes 138 and Hard 120 becomes 108. Kill bounty, wave-clear bonus, early call, and sell refund are not multiplied. The sim applies `difficulty_hp` inside `scaled_enemy_hp`. `GridwardSim` builds a Normal config in `_init`. Campaign play assigns `for_difficulty` onto that config before the first step, after scaling `MapDef.starting_gold`.
 
 ## MapDef
 
@@ -382,6 +407,51 @@ Waypoints (cell indices), an orthogonal S from the west edge to the east edge:
 | 9 | grunt 8 / 40 / 0, then runner 8 / 30 / 360 |
 
 Waves 0–1 teach the grunt. Wave 2 introduces the runner. Wave 4 is a wider-spaced rest. Wave 9 is the mixed climax. The full enemy and tower tables above still exist on the catalog for later maps.
+
+## Campaign maps
+
+`GridwardCatalog.MAP_IDS` is the unlock order. `build_map(id)` returns one of the builders, or `null`. `map_title` is the label. `star_thresholds` is `(15, 8)` on every map: lives left for 3 stars, then 2 stars. Spawn rows live in the builder. Each map is 16×10 with 20 lives. The path enters on x 0 and leaves on x 15. Path cells are not buildable.
+
+| Map | Id | Waves | Normal gold | Towers | Teach |
+|-----|----|-------|-------------|--------|-------|
+| Meadow | `meadow` | 10 | 120 | bolt | build and bolt |
+| Bend | `bend` | 12 | 150 | bolt, mortar | splash on a tight pack |
+| Skyreach | `skyreach` | 12 | 180 | bolt, mortar, flak | flyers |
+| Bastion | `bastion` | 14 | 200 | bolt, mortar, frost, flak | armor and slow |
+| Citadel | `citadel` | 15 | 240 | all five | boss and beam |
+
+Bend waypoints: `(0, 2) → (11, 2) → (11, 6) → (3, 6) → (3, 8) → (15, 8)`. Wave 2 is a grunt pack at spacing 20. Swarm packs follow. No tank, flyer, or boss.
+
+Skyreach waypoints: `(0, 1) → (15, 1) → (15, 5) → (0, 5) → (0, 8) → (15, 8)`. Wave 2 introduces flyers. No tank or boss.
+
+Bastion waypoints: `(0, 4) → (6, 4) → (6, 1) → (12, 1) → (12, 8) → (4, 8) → (4, 6) → (15, 6)`. Wave 3 introduces tanks. A later wave still sends flyers. No boss.
+
+Citadel waypoints: `(0, 1) → (14, 1) → (14, 3) → (2, 3) → (2, 5) → (14, 5) → (14, 8) → (15, 8)`. Waves revisit splash, air, and armor. Wave 12 sends one boss with a grunt escort. Wave 14 sends the boss again with tank, flyer, and grunt.
+
+Starting gold on Easy and Hard is `scaled_gold` of the Normal value above. The taught tower's cost fits in the Normal purse (mortar 80, flak 90, frost 70, beam 110).
+
+## GridwardProgress
+
+Plain campaign record. No `FileAccess`.
+
+```gdscript
+const VERSION := 1
+var version: int
+var cleared: Dictionary
+func stars_for(map_id: StringName, difficulty: StringName) -> int
+func best_stars(map_id: StringName) -> int
+func is_unlocked(map_id: StringName) -> bool
+static func stars_from_lives(lives: int, three_at: int = 15, two_at: int = 8) -> int
+func record_victory(map_id: StringName, difficulty: StringName, lives: int, three_at: int = 15, two_at: int = 8) -> int
+func capture_state() -> Dictionary
+func apply_state(data: Dictionary) -> void
+```
+
+`cleared` maps a map id to a difficulty id to a star count. Missing entries are 0. `stars_from_lives` returns 3, 2, 1, or 0 using the gates above. Lives at 0 score 0. `record_victory` returns the stars for this clear and stores the higher of that and the previous count for the same map and difficulty. Unknown difficulty ids are not stored.
+
+`is_unlocked` is true for `meadow`. Each following id in `MAP_IDS` needs `best_stars` of at least 1 on the previous map. Any other id is locked. One star on Easy Meadow opens Bend.
+
+`capture_state` is `{version, cleared}` with string keys `easy`, `normal`, and `hard`. `apply_state` replaces `cleared` from that dictionary. The app migrates before apply. The file format is in [app.md](app.md).
 
 ## GridwardBot
 

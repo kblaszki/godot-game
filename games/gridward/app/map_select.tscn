@@ -1,0 +1,86 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://games/gridward/app/map_select.gd" id="1_map_select"]
+
+[node name="MapSelect" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_map_select")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.06, 0.09, 0.08, 1)
+
+[node name="Center" type="CenterContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Column" type="VBoxContainer" parent="Center"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="Center/Column"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_font_sizes/font_size = 36
+text = "Choose a map"
+horizontal_alignment = 1
+
+[node name="Hint" type="Label" parent="Center/Column"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.8, 0.86, 0.82, 1)
+theme_override_font_sizes/font_size = 16
+text = "One star on a map opens the next."
+horizontal_alignment = 1
+
+[node name="Difficulty" type="HBoxContainer" parent="Center/Column"]
+layout_mode = 2
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="Easy" type="Button" parent="Center/Column/Difficulty"]
+custom_minimum_size = Vector2(110, 44)
+layout_mode = 2
+toggle_mode = true
+text = "Easy"
+
+[node name="Normal" type="Button" parent="Center/Column/Difficulty"]
+custom_minimum_size = Vector2(110, 44)
+layout_mode = 2
+toggle_mode = true
+button_pressed = true
+text = "Normal"
+
+[node name="Hard" type="Button" parent="Center/Column/Difficulty"]
+custom_minimum_size = Vector2(110, 44)
+layout_mode = 2
+toggle_mode = true
+text = "Hard"
+
+[node name="Maps" type="VBoxContainer" parent="Center/Column"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Start" type="Button" parent="Center/Column"]
+custom_minimum_size = Vector2(280, 44)
+layout_mode = 2
+text = "Start"
+
+[node name="Back" type="Button" parent="Center/Column"]
+custom_minimum_size = Vector2(280, 44)
+layout_mode = 2
+text = "Back"

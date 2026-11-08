@@ -17,12 +17,12 @@ related_docs:
   - ../index.md
   - ../spec.md
 keywords: [gridward, economy, bounty, early-call, upgrade, lane-holds, Meadow, armor, slow, beam, burn, bot, canary]
-last_reviewed: 2026-11-08
+last_reviewed: 2026-11-09
 ---
 
 # Gridward balance
 
-Numbers for Normal difficulty. Formulas match [spec.md](../spec.md) §7. The sim reads them from `GridwardConfig`. `difficulty_gold` is stored for later campaign setup and does not multiply these payouts.
+Numbers for Normal difficulty. Formulas match [spec.md](../spec.md) §7. The sim reads them from `GridwardConfig`. `difficulty_gold` scales that map's starting gold when a campaign match is built (`GridwardConfig.scaled_gold`). Kill bounty, wave-clear bonus, early call, and sell refund stay on the formulas in this table. `difficulty_hp` scales spawn HP.
 
 ## Payouts
 
@@ -32,7 +32,7 @@ Numbers for Normal difficulty. Formulas match [spec.md](../spec.md) §7. The sim
 | Wave clear | `25 + 5 * wave_index` | wave 0 pays 25, wave 1 pays 30 |
 | Early call | `min(40, floor(remaining_ticks / 30))` | only while the build timer remains |
 | Sell refund | `floor(invested * 0.70)` | tier-0 bolt (50) refunds 35 |
-| Starting gold | map field | Meadow 120 |
+| Starting gold | map field, then `scaled_gold` | Meadow 120 on Normal. Easy ×1.15, Hard ×0.9 |
 | Starting lives | map field | Meadow 20 |
 
 `invested` is the build cost plus every upgrade paid. A leak does not change gold. The clear bonus is paid when the wave enters `WAVE_CLEAR`, including a wave that cleared by leaking. The last wave pays it before victory.

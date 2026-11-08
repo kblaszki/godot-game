@@ -1,20 +1,20 @@
 extends Control
 
-const PLAY_PATH := "res://games/gridward/app/play.tscn"
+const MAP_SELECT_PATH := "res://games/gridward/app/map_select.tscn"
 
 @onready var _play: Button = $Center/Column/Play
 @onready var _quit: Button = $Center/Column/Quit
 
 
 func _ready() -> void:
-	($Center/Column/Hint as Label).text = "Meadow. Build, then start the wave."
+	($Center/Column/Hint as Label).text = "Five maps. One star opens the next."
 	_play.pressed.connect(_on_play_pressed)
 	_quit.pressed.connect(_on_quit_pressed)
 	_play.grab_focus()
 
 
 func _on_play_pressed() -> void:
-	_submit(SceneRequest.replace(PLAY_PATH))
+	_submit(SceneRequest.replace(MAP_SELECT_PATH))
 
 
 func _on_quit_pressed() -> void:

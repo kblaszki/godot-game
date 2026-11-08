@@ -1,6 +1,7 @@
 extends Control
 
 const PAUSE_PATH := "res://games/gridward/app/pause_menu.tscn"
+const RESULTS_PATH := "res://games/gridward/app/results.tscn"
 const ICON_SHEET_PNG := "res://games/gridward/assets/pxl/icons.png"
 const ICON_SHEET_JSON := "res://games/gridward/assets/pxl/icons.json"
 const CLICK_DRAG_PX := 6.0
@@ -24,6 +25,8 @@ const TARGET_MODES: Array[StringName] = [
 var _map: MapDef
 var _sim: GridwardSim
 var _sim_bound: bool = false
+var _difficulty: StringName = GridwardConfig.DIFF_NORMAL
+var _outcome_sent: bool = false
 var _keys: InputState = InputState.new()
 var _ui_config: GridwardConfig = GridwardConfig.new()
 var _build_group: ButtonGroup = ButtonGroup.new()
@@ -68,6 +71,7 @@ func bind_sim(sim: GridwardSim, map: MapDef) -> void:
 	_sim = sim
 	_map = map
 	_sim_bound = true
+	_outcome_sent = false
 	if is_node_ready():
 		_selected_type = _default_type()
 		_after_command()
@@ -89,8 +93,7 @@ func toggle_speed() -> void:
 func _ready() -> void:
 	_ensure_input_map()
 	if not _sim_bound:
-		_map = GridwardCatalog.build_meadow()
-		_sim = GridwardSim.new(_map, GridwardCatalog.new(), 1)
+		_begin_selected_match()
 	if OS.has_feature("headless") or DisplayServer.get_name() == "headless":
 		_viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
 	else:
@@ -165,6 +168,7 @@ func _advance_sim() -> void:
 	if stepped:
 		_refresh_hud()
 		_refresh_ghost()
+	_present_outcome()
 
 
 func _sample_input() -> void:
@@ -317,6 +321,7 @@ func _after_command() -> void:
 	_dispatch_events(events)
 	_refresh_hud()
 	_refresh_ghost()
+	_present_outcome()
 
 
 func _dispatch_events(events: Array) -> void:
@@ -684,6 +689,54 @@ func _event_is_play_key(event: InputEvent) -> bool:
 		if event.is_action(action):
 			return true
 	return false
+
+
+func _begin_selected_match() -> void:
+	var map_id := GridwardCatalog.MEADOW
+	var difficulty := GridwardConfig.DIFF_NORMAL
+	var host := _find_gridward_host()
+	if host != null:
+		var chosen_map = host.get("selected_map")
+		var chosen_diff = host.get("selected_difficulty")
+		if chosen_map != null:
+			map_id = chosen_map
+		if chosen_diff != null:
+			difficulty = chosen_diff
+	_difficulty = difficulty
+	var config := GridwardConfig.for_difficulty(difficulty)
+	_ui_config = config
+	var built := GridwardCatalog.build_map(map_id)
+	if built == null:
+		built = GridwardCatalog.build_meadow()
+	built.starting_gold = GridwardConfig.scaled_gold(built.starting_gold, config.difficulty_gold)
+	_map = built
+	_sim = GridwardSim.new(_map, GridwardCatalog.new(), 1)
+	# Spawn HP reads difficulty_hp from the sim config. The sim builds a Normal
+	# config itself; the campaign match replaces it before the first step.
+	_sim._config = config
+
+
+func _present_outcome() -> void:
+	if _outcome_sent or _sim == null or _map == null:
+		return
+	var phase := _sim.get_phase()
+	var won := phase == GridwardSim.Phase.VICTORY
+	if not won and phase != GridwardSim.Phase.DEFEAT:
+		return
+	_outcome_sent = true
+	var host := _find_gridward_host()
+	if host != null and host.has_method("note_result"):
+		host.call("note_result", _map.id, _difficulty, _sim.get_lives(), won)
+	_submit(SceneRequest.replace(RESULTS_PATH))
+
+
+func _find_gridward_host() -> Node:
+	var node: Node = get_parent()
+	while node != null:
+		if node.has_method("note_result") and node.has_method("choose_match"):
+			return node
+		node = node.get_parent()
+	return null
 
 
 func _submit(req: SceneRequest) -> void:

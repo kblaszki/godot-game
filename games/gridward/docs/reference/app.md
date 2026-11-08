@@ -7,10 +7,16 @@ related_code:
   - games/gridward/app/host.tscn
   - games/gridward/app/menu.gd
   - games/gridward/app/menu.tscn
+  - games/gridward/app/map_select.gd
+  - games/gridward/app/map_select.tscn
   - games/gridward/app/play.gd
   - games/gridward/app/play.tscn
   - games/gridward/app/pause_menu.gd
   - games/gridward/app/pause_menu.tscn
+  - games/gridward/app/results.gd
+  - games/gridward/app/results.tscn
+  - games/gridward/app/progress_store.gd
+  - games/gridward/sim/gridward_progress.gd
   - games/gridward/app/board_3d.gd
   - games/gridward/app/board_3d.tscn
   - games/gridward/app/gridward_audio.gd
@@ -18,6 +24,8 @@ related_code:
   - games/gridward/assets/pxl/icons.json
   - lab/launcher.gd
   - tests/games/gridward/gridward_host_flow_test.gd
+  - tests/games/gridward/gridward_progress_test.gd
+  - tests/games/gridward/gridward_campaign_test.gd
   - tests/games/gridward/gridward_play_test.gd
   - tests/games/gridward/gridward_board3d_test.gd
   - tests/games/gridward/gridward_juice_test.gd
@@ -28,7 +36,7 @@ related_docs:
   - ../../../../docs/reference/lab-shell.md
   - ../../../../docs/reference/engine-scene-stack.md
   - ../../../../docs/how-to/make-pixel-art.md
-keywords: [gridward, app, host, menu, play, pause, HUD, build bar, LayeredHost, GridwardBoard3D, camera, cell pick, juice, audio, icons, trauma, hit-stop]
+keywords: [gridward, app, host, menu, map select, results, progress, play, pause, HUD, build bar, LayeredHost, GridwardBoard3D, camera, cell pick, juice, audio, icons, trauma, hit-stop]
 last_reviewed: 2026-11-09
 ---
 
@@ -43,8 +51,16 @@ classDiagram
     +sync_layers()
   }
   class Menu
+  class MapSelect
   class Play
   class PauseMenu
+  class Results
+  class GridwardProgressStore {
+    +load(path)
+    +save(path, progress)
+    +migrate(data)
+  }
+  class GridwardProgress
   class SceneStack
   class GridwardSim
   class GridwardBoard3D
@@ -52,11 +68,17 @@ classDiagram
   class Camera3D
   Host --> SceneStack : owns
   Host --> Menu : boot replace
-  Host --> Play : play replace
+  Host --> MapSelect : play replace
+  Host --> Play : start replace
   Host --> PauseMenu : pause push
+  Host --> Results : outcome replace
+  Host --> GridwardProgress : owns
+  GridwardProgressStore --> GridwardProgress : load/save
   Menu --> Host : submit
-  Play --> Host : "push pause, pop via menu"
+  MapSelect --> Host : "choose_match, start or back"
+  Play --> Host : "push pause, note_result"
   PauseMenu --> Host : "pop or replace menu"
+  Results --> Host : "map select or menu"
   Play --> GridwardSim : "step, commands"
   Play --> GridwardAudio : play_cue
   Play --> GridwardBoard3D : "sync and juice"
@@ -65,18 +87,32 @@ classDiagram
 
 ## Host
 
-`_boot` `REPLACE`s `menu.tscn`. Window size stays lab-owned. `_on_quit_requested` walks parents for `return_to_launcher` and calls it deferred when nested; otherwise `get_tree().quit()`.
+`_boot` loads progress, then `REPLACE`s `menu.tscn`. Window size stays lab-owned. `_on_quit_requested` walks parents for `return_to_launcher` and calls it deferred when nested; otherwise `get_tree().quit()`.
+
+The host keeps `progress`, `selected_map`, and `selected_difficulty`. `choose_match` stores the map select choice. `note_result` writes result meta for the results scene. On a win it calls `record_victory` and `GridwardProgressStore.save`. A loss does not write the file. An ancestor meta `gridward_progress_path` overrides the save path. The default is `user://gridward/progress.txt`.
 
 ## Menu
 
 | Button | Request |
 |--------|---------|
-| Play | `REPLACE` `play.tscn` |
+| Play | `REPLACE` `map_select.tscn` |
 | Quit | `QUIT` (returns to the lab launcher when nested) |
+
+## Map select
+
+Five map buttons, one per `GridwardCatalog.MAP_IDS`, plus Easy / Normal / Hard. A locked map is disabled and reads "locked". An open map shows its best stars (`★★★` down to `☆☆☆`). Start calls `choose_match` and `REPLACE`s `play.tscn` when that map is unlocked. Back `REPLACE`s the menu. Meadow grabs focus. Meadow is the default map and Normal is the default difficulty. Returning from results restores the last choice when it is still unlocked.
+
+## Results
+
+Shown after victory or defeat. The title is Victory or Defeat. Stars are the stars earned on this clear, or "No stars" after a loss. The detail line is map, difficulty, and lives left. Map select `REPLACE`s `map_select.tscn` and grabs focus. Menu `REPLACE`s the menu.
+
+## Progress file
+
+`GridwardProgressStore` is the only Gridward type that calls `FileAccess`. The text format is a header `gg-gridward-progress 1` and one `map difficulty stars` line per non-zero clear (`meadow normal 3`). Stars are 1–3. `load` of a missing or corrupt file returns an empty `GridwardProgress`. `save` writes `path.tmp` and renames it into place. `migrate` copies the dictionary forward while `version < CURRENT` (1). Version 1 has no field changes. `apply_state` runs after migrate.
 
 ## Play
 
-Play embeds `GridwardBoard3D` in a `SubViewport`, owns a Meadow `GridwardSim`, and steps it. Each frame calls `step()` once, or twice when speed is 2×, unless hit-stop is skipping steps. When pause is the top layer, `LayeredHost` disables play's process, so `step()` does not run. Events are drained after commands and after each step that ran. The board mirrors state and plays juice. It does not change rules.
+Play embeds `GridwardBoard3D` in a `SubViewport`, builds the host's selected map at the selected difficulty, and steps that `GridwardSim`. With no host it uses Meadow on Normal. Starting gold is `GridwardConfig.scaled_gold`. Spawn HP uses the difficulty config assigned before the first step. When the phase becomes victory or defeat, play calls `note_result` and `REPLACE`s `results.tscn`. Each frame calls `step()` once, or twice when speed is 2×, unless hit-stop is skipping steps. When pause is the top layer, `LayeredHost` disables play's process, so `step()` does not run. Events are drained after commands and after each step that ran. The board mirrors state and plays juice. It does not change rules.
 
 | Corner / dock | Shows |
 |---------------|--------|

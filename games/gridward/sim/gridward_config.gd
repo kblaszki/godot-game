@@ -44,3 +44,41 @@ const NORMAL_HP := 1.0
 const NORMAL_GOLD := 1.0
 const HARD_HP := 1.25
 const HARD_GOLD := 0.9
+
+const DIFF_EASY: StringName = &"easy"
+const DIFF_NORMAL: StringName = &"normal"
+const DIFF_HARD: StringName = &"hard"
+const DIFFICULTIES: Array[StringName] = [DIFF_EASY, DIFF_NORMAL, DIFF_HARD]
+
+
+static func for_difficulty(difficulty: StringName) -> GridwardConfig:
+	var config := GridwardConfig.new()
+	match difficulty:
+		DIFF_EASY:
+			config.difficulty_hp = EASY_HP
+			config.difficulty_gold = EASY_GOLD
+		DIFF_HARD:
+			config.difficulty_hp = HARD_HP
+			config.difficulty_gold = HARD_GOLD
+		_:
+			config.difficulty_hp = NORMAL_HP
+			config.difficulty_gold = NORMAL_GOLD
+	return config
+
+
+## Starting gold only. Kill bounty, wave clear, early call, and sell refund stay unscaled.
+static func scaled_gold(amount: int, multiplier: float) -> int:
+	if amount <= 0 or multiplier <= 0.0:
+		return 0
+	var hundredths := roundi(multiplier * 100.0)
+	return maxi(roundi(float(amount * hundredths) / 100.0), 0)
+
+
+static func difficulty_title(difficulty: StringName) -> String:
+	match difficulty:
+		DIFF_EASY:
+			return "Easy"
+		DIFF_HARD:
+			return "Hard"
+		_:
+			return "Normal"

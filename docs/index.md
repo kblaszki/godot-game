@@ -17,7 +17,7 @@ related_docs:
   - how-to/make-pixel-art.md
   - tutorials/create_new_game.md
 keywords: [index, diataxis, map]
-last_reviewed: 2026-11-08
+last_reviewed: 2026-11-09
 ---
 
 # Documentation map
@@ -68,4 +68,4 @@ Cross-game and engine docs for the **godot-game** lab (Godot 4.x, typed GDScript
 | [breakout / Shatter](../games/breakout/docs/index.md) | Neon `BreakoutSim` brick-breaker (Shatter UI) |
 | [districts](../games/districts/docs/index.md) | Property-circuit hotseat 2–4 with bots (3D board, corner HUD) |
 | [Fairway Circuit (minigolf)](../games/minigolf/docs/index.md) | 9-hole putt-putt hotseat + bots (Course3D iso) |
-| [Gridward](../games/gridward/docs/index.md) | Fixed-path tower defense campaign (Meadow catalog; host, menu, play stub) |
+| [Gridward](../games/gridward/docs/index.md) | Fixed-path tower defense campaign (five maps, stars, progress save) |

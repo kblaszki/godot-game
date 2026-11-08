@@ -20,8 +20,8 @@ last_reviewed: 2026-11-09
 
 # Gridward
 
-Solo-campaign **fixed-path tower defense** in 3D. Status: **Meadow sim, 3D board, play HUD, combat juice, and tower icons**. The lab launcher opens a layered host, menu, and play scene. `sim/`
-holds `GridwardConfig`, entity defs, `GridwardCatalog.build_meadow()`, and `GridwardBot`.
+Solo-campaign **fixed-path tower defense** in 3D. Status: **five maps, star unlocks, and a versioned progress save**, plus the Meadow sim, 3D board, play HUD, combat juice, and tower icons. The lab launcher opens a layered host: menu, map select, play, and results. `sim/`
+holds `GridwardConfig`, entity defs, `GridwardCatalog` maps, `GridwardProgress`, and `GridwardBot`.
 
 Presentation lives in `app/`. Follow
 [architecture](../../../docs/explanation/architecture.md) and the plan series
@@ -31,15 +31,15 @@ under [plans/](plans/).
 
 | Doc | Purpose |
 |-----|---------|
-| [sim.md](reference/sim.md) | Config, defs, Meadow catalog, match API, and bot |
-| [balance.md](reference/balance.md) | Bounty, bonuses, upgrade curve, Meadow lane-holds |
-| [app.md](reference/app.md) | Host, menu, play HUD, pause, juice, audio, icons |
+| [sim.md](reference/sim.md) | Config, defs, five-map catalog, progress, match API, and bot |
+| [balance.md](reference/balance.md) | Bounty, bonuses, upgrade curve, Meadow lane-holds, difficulty gold |
+| [app.md](reference/app.md) | Host, map select, results, progress file, play HUD, pause, juice |
 
 ## Explanation
 
 | Doc | Purpose |
 |-----|---------|
-| [flow.md](explanation/flow.md) | Menu, play, pause, and match phases |
+| [flow.md](explanation/flow.md) | Menu, map select, play, pause, results, and match phases |
 
 ## Spec
 
