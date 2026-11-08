@@ -1,0 +1,48 @@
+NOTICE
+======
+
+This project (godot-game) is MIT-licensed; see LICENSE.
+
+Portions of the Cursor Agent Skills under `.cursor/skills/` are adapted from:
+
+  https://github.com/gamedev-skills/awesome-gamedev-agent-skills
+  Copyright contributors to awesome-gamedev-agent-skills
+  Licensed under the Apache License, Version 2.0
+  http://www.apache.org/licenses/LICENSE-2.0
+
+Those skills were rewritten for this lab's Headless First contract (sim/app
+split, SeededRng, FixedTick, GUT, Diataxis, Godot 4.3). They are not a verbatim
+vendoring of the upstream catalog.
+
+Adapted upstream skill names (sources → local skills):
+
+  physics-tuning, godot-physics          → sim-physics
+  procedural-gen                         → procedural-gen
+  game-ai, ai-behavior-trees-utility-ai  → sim-bot-ai
+  godot-resources                        → sim-data-resources
+  save-systems                           → save-systems
+  dialogue-systems                       → dialogue-systems
+  level-design                           → level-design
+  godot-multiplayer                      → sim-networking
+  godot-gdscript, godot-nodes-scenes,
+    godot-signals-groups                 → godot-app-scripting
+  godot-3d-essentials                    → godot-3d-presentation
+  godot-2d-movement, godot-tilemap       → godot-2d-presentation
+  camera-systems                         → camera-systems
+  game-feel, godot-animation             → game-feel
+  game-ui-ux, godot-ui-control           → game-ui-ux
+  audio-design, godot-audio              → game-audio
+  godot-shaders, shader-programming      → godot-shaders
+  input-systems                          → input-systems
+  performance-optimization               → performance-optimization
+  create-game-assets                     → game-assets
+  platformer, roguelike, rpg, fps-shooter,
+    tower-defense, card-game, visual-novel,
+    survival-crafting, puzzle            → genre-playbooks
+  prototype-fast, game-jam               → prototype-mechanic
+  godot-export, itch-publish,
+    steam-publish                        → ship-build
+  godot-gdscript-headless-testing        → merged into run-build-and-tests
+                                           and docs/how-to/write-headless-tests.md
+
+See docs/reference/agent-skills.md for the full skill map.
