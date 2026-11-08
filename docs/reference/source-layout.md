@@ -2,7 +2,7 @@
 title: Source layout
 diataxis: reference
 audience: [ai, human]
-related_code: [project.godot, engine/, lab/, games/, tests/, docs/, AGENTS.md, NOTICE, .cursor/skills/, addons/gut/, .gutconfig.json]
+related_code: [project.godot, engine/, lab/, games/, tests/, docs/, art/, assets/, tools/, AGENTS.md, NOTICE, .cursor/skills/, addons/gut/, .gutconfig.json]
 related_docs:
   - ../index.md
   - ../explanation/architecture.md
@@ -11,8 +11,10 @@ related_docs:
   - engine-input.md
   - engine-save.md
   - engine-audio.md
+  - engine-pxl-sheet.md
   - engine-scene-stack.md
   - lab-shell.md
+  - ../how-to/make-pixel-art.md
 keywords: [layout, inventory, paths, tests]
 last_reviewed: 2026-11-08
 ---
@@ -28,10 +30,13 @@ Inventory of the lab tree. Update this page when paths are added, removed, or re
 |------|------|
 | `project.godot` | Godot 4.x lab; GUT enabled; InputMap `pong_*` / `snake_*`; `run/main_scene` is `lab/lab_host.tscn` |
 | `AGENTS.md` | Tool-neutral agent summary |
-| `NOTICE` | Apache-2.0 attribution for adapted Agent Skills |
+| `NOTICE` | Attribution for adapted Agent Skills and vendored pxl |
 | `engine/` | Shared headless GDScript libraries |
-| `lab/` | LayeredHost, lab host, launcher, WindowApplier |
+| `lab/` | LayeredHost, lab host, launcher, Pixel Gallery, WindowApplier |
 | `games/` | Per-game `sim/`, `app/`, `docs/` |
+| `art/` | pxl sources (`.px.js`); `out/` gitignored; `.gdignore` |
+| `assets/` | Shared committed art (e.g. `assets/pixel_demo/`) |
+| `tools/` | Vendored CLIs (pxl); `.gdignore` |
 | `tests/engine/` | GUT suites for `engine/` |
 | `tests/lab/` | GUT suites for lab shell |
 | `tests/games/` | Per-game GUT suites |
@@ -48,8 +53,9 @@ Inventory of the lab tree. Update this page when paths are added, removed, or re
 |------|-------|
 | `lab/layered_host.gd` | Shared layered `SceneStack` host |
 | `lab/lab_host.gd` | Main scene host; loads settings + `return_to_launcher` |
-| `lab/launcher.gd` | Game registry UI |
+| `lab/launcher.gd` | Game registry UI + Pixel Gallery / Settings |
 | `lab/settings.gd` / `settings.tscn` | Lab display settings UI |
+| `lab/pixel_gallery.gd` / `pixel_gallery.tscn` | pxl demo sprite browser |
 | `lab/window_applier.gd` | Applies `LabSettings` to a `Window` |
 | `lab/godot_audio.gd` | Node audio adapter (`GodotAudio`) |
 
@@ -76,6 +82,7 @@ Inventory of the lab tree. Update this page when paths are added, removed, or re
 | `engine/lab_settings.gd` | Display mode + resolution profile |
 | `engine/settings_store.gd` | Load/save `LabSettings` text files |
 | `engine/null_audio.gd` | Headless no-op audio port |
+| `engine/pxl_sheet.gd` | `PxlSheet` atlas / anim JSON parser |
 | `engine/scene_request.gd` | `SceneRequest` PUSH/POP/REPLACE/QUIT |
 | `engine/scene_stack.gd` | `SceneStack` request queue + apply + `paths()` |
 
@@ -96,7 +103,9 @@ Inventory of the lab tree. Update this page when paths are added, removed, or re
 | `tests/mocks/audio_spy.gd` | Records `play` calls for GUT |
 | `tests/lab/lab_host_flow_test.gd` | launcher ↔ pong host nesting |
 | `tests/lab/lab_settings_flow_test.gd` | launcher ↔ settings; persist resolution |
+| `tests/lab/pixel_gallery_flow_test.gd` | Pixel Gallery sheet load, variant, back |
 | `tests/lab/window_applier_test.gd` | windowed / fullscreen apply |
+| `tests/engine/pxl_sheet_test.gd` | `PxlSheet` rects, tags, invalid JSON |
 | `tests/games/pong/pong_sim_test.gd` | sim determinism / AI / scoring |
 | `tests/games/pong/pong_host_flow_test.gd` | pause keep-alive |
 | `tests/games/snake/snake_sim_test.gd` | snake rules / determinism |

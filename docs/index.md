@@ -14,6 +14,7 @@ related_docs:
   - how-to/build-and-test.md
   - how-to/write-headless-tests.md
   - how-to/add-a-game.md
+  - how-to/make-pixel-art.md
   - tutorials/create_new_game.md
 keywords: [index, diataxis, map]
 last_reviewed: 2026-11-08
@@ -36,6 +37,7 @@ Cross-game and engine docs for the **godot-game** lab (Godot 4.x, typed GDScript
 | [build-and-test.md](how-to/build-and-test.md) | Load project, run GUT, CI workflow |
 | [write-headless-tests.md](how-to/write-headless-tests.md) | Sim/engine GUT conventions |
 | [add-a-game.md](how-to/add-a-game.md) | Checklist to scaffold a new game |
+| [make-pixel-art.md](how-to/make-pixel-art.md) | pxl DSL → PNG sheets → Godot nearest |
 
 ## Tutorials
 
@@ -54,6 +56,7 @@ Cross-game and engine docs for the **godot-game** lab (Godot 4.x, typed GDScript
 | [engine-input.md](reference/engine-input.md) | Headless `InputState` for action held/edges |
 | [engine-save.md](reference/engine-save.md) | `HighScoreTable`, `ScoreStore`, `LabSettings`, `SettingsStore` |
 | [engine-audio.md](reference/engine-audio.md) | `NullAudio` port and `GodotAudio` lab adapter |
+| [engine-pxl-sheet.md](reference/engine-pxl-sheet.md) | `PxlSheet` TexturePacker / anim JSON parser |
 | [agent-skills.md](reference/agent-skills.md) | Cursor Agent Skills map (sim/app/genre/workflow) |
 
 ## Game documentation

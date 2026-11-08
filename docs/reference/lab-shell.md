@@ -11,22 +11,27 @@ related_code:
   - lab/launcher.tscn
   - lab/settings.gd
   - lab/settings.tscn
+  - lab/pixel_gallery.gd
+  - lab/pixel_gallery.tscn
   - lab/window_applier.gd
   - lab/godot_audio.gd
   - project.godot
   - tests/lab/lab_host_flow_test.gd
   - tests/lab/lab_settings_flow_test.gd
+  - tests/lab/pixel_gallery_flow_test.gd
   - tests/lab/window_applier_test.gd
 related_docs:
   - ../index.md
   - ../explanation/architecture.md
   - ../how-to/add-a-game.md
+  - ../how-to/make-pixel-art.md
   - source-layout.md
   - engine-scene-stack.md
   - engine-save.md
   - engine-audio.md
-keywords: [lab, launcher, settings, LayeredHost, nested-host, WindowApplier, GodotAudio, stretch]
-last_reviewed: 2026-11-02
+  - engine-pxl-sheet.md
+keywords: [lab, launcher, settings, pixel-gallery, LayeredHost, nested-host, WindowApplier, GodotAudio, stretch]
+last_reviewed: 2026-11-08
 ---
 
 # Lab shell
@@ -63,7 +68,11 @@ Shared base at `lab/layered_host.gd`: `SceneStack`, `submit`, `_flush`, `sync_la
 
 ## Launcher
 
-`lab/launcher.gd` holds `GAMES` as `{title, host_path}` rows. Each row becomes a button that `REPLACE`s that game host. **Settings** `REPLACE`s `lab/settings.tscn`. **Quit** submits `QUIT`.
+`lab/launcher.gd` holds `GAMES` as `{title, host_path}` rows. Each row becomes a button that `REPLACE`s that game host. **Pixel Gallery** `REPLACE`s `lab/pixel_gallery.tscn` (lab tool, not a game). **Settings** `REPLACE`s `lab/settings.tscn`. **Quit** submits `QUIT`.
+
+## Pixel Gallery
+
+`lab/pixel_gallery.tscn` shows pxl-generated sprites from `assets/pixel_demo/` via `PxlSheet` (nearest filter, coin anim, slime variant button). Esc / Back returns to the launcher. See [make-pixel-art.md](../how-to/make-pixel-art.md).
 
 ## Settings
 
