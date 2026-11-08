@@ -68,7 +68,7 @@ Inventory of the lab tree. Update this page when paths are added, removed, or re
 | breakout | `breakout_config.gd`, `breakout_sim.gd` | host + menu/play/pause + `assets/` | `games/breakout/docs/` | `breakout_sim_test.gd`, `breakout_host_flow_test.gd` |
 | districts | board/player/config/sim/bot/chance/gadgets/network stubs | host + setup/play/pause + baker + `board_3d` + `district_audio` + `assets/` | `games/districts/docs/` | `district_sim_test.gd`, `district_host_flow_test.gd`, `district_tile_baker_test.gd` |
 | minigolf | config/hole/course/ball/score/sim/bot | host + menu/setup/play/pause/results + `course_3d` + audio | `games/minigolf/docs/` | physics/sim/bot/host_flow |
-| gridward | `gridward_config.gd`, `map_def.gd`, `enemy_def.gd`, `tower_def.gd`, `wave_def.gd`, `gridward_catalog.gd`, `enemy_state.gd`, `gridward_sim.gd`, `gridward_events.gd` | host extends LayeredHost + menu/play stub | `games/gridward/docs/` (spec + `plans/` 00–12 + reference/explanation) | `gridward_catalog_test.gd`, `gridward_sim_test.gd`, `gridward_host_flow_test.gd` |
+| gridward | `gridward_config.gd`, `map_def.gd`, `enemy_def.gd`, `tower_def.gd`, `wave_def.gd`, `gridward_catalog.gd`, `enemy_state.gd`, `tower_state.gd`, `projectile_state.gd`, `gridward_sim.gd`, `gridward_events.gd` | host extends LayeredHost + menu/play stub | `games/gridward/docs/` (spec + `plans/` 00–12 + reference/explanation) | `gridward_catalog_test.gd`, `gridward_sim_test.gd`, `gridward_towers_test.gd`, `gridward_host_flow_test.gd` |
 
 ## Engine modules
 
@@ -122,4 +122,5 @@ Inventory of the lab tree. Update this page when paths are added, removed, or re
 | `tests/games/minigolf/minigolf_host_flow_test.gd` | menu / play / pause |
 | `tests/games/gridward/gridward_catalog_test.gd` | Meadow path, buildable mask, wave ids, spec tables |
 | `tests/games/gridward/gridward_sim_test.gd` | wave phase, path leftover, leak, victory, defeat, same-seed |
+| `tests/games/gridward/gridward_towers_test.gd` | place, sell, upgrade, targeting, bolt hitscan, mortar splash |
 | `tests/games/gridward/gridward_host_flow_test.gd` | menu to play; quit returns to lab |

@@ -47,7 +47,7 @@ stateDiagram-v2
   defeat --> [*]
 ```
 
-`start_wave()` moves `build` to `wave`. Each `step()` during `wave` spawns entries that are due, moves enemies along the waypoint polyline, and runs an empty tower acquire. A leak removes that enemy and loses one life. Lives at 0 set `defeat` in that same step, including when the leaking enemy was the last one alive.
+`start_wave()` moves `build` to `wave`. Each `step()` during `wave` spawns entries that are due, moves enemies along the waypoint polyline, then advances projectiles and lets ready towers acquire and fire. A leak removes that enemy and loses one life. Lives at 0 set `defeat` in that same step, including when the leaking enemy was the last one alive.
 
 When every entry has spawned and no enemies remain, that step enters `waveClear`. The next `step()` leaves it: `build` and the next wave index when waves remain, or `victory` on the last wave. `start_wave()` returns false outside `build`.
 
@@ -59,7 +59,7 @@ sequenceDiagram
   Host->>Sim: step()
   Sim->>Sim: spawnDue
   Sim->>Sim: moveEnemies
-  Sim->>Sim: acquireTargets
+  Sim->>Sim: resolveCombat
   Sim->>Sim: checkLeakAndClear
   Host->>Sim: drain_events()
 ```
