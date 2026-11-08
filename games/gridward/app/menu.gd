@@ -7,6 +7,7 @@ const PLAY_PATH := "res://games/gridward/app/play.tscn"
 
 
 func _ready() -> void:
+	($Center/Column/Hint as Label).text = "Meadow. Build, then start the wave."
 	_play.pressed.connect(_on_play_pressed)
 	_quit.pressed.connect(_on_quit_pressed)
 	_play.grab_focus()

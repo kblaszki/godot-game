@@ -6,6 +6,7 @@ related_code:
   - games/gridward/app/host.gd
   - games/gridward/app/menu.gd
   - games/gridward/app/play.gd
+  - games/gridward/app/pause_menu.gd
   - games/gridward/sim/gridward_sim.gd
   - games/gridward/sim/enemy_state.gd
   - games/gridward/sim/gridward_events.gd
@@ -15,25 +16,44 @@ related_docs:
   - ../reference/sim.md
   - ../reference/balance.md
   - ../spec.md
-keywords: [gridward, flow, menu, play, build, wave, victory, defeat]
-last_reviewed: 2026-11-08
+keywords: [gridward, flow, menu, play, pause, build, wave, victory, defeat, speed]
+last_reviewed: 2026-11-09
 ---
 
 # Gridward scene flow
 
-The host boots to the menu. Play replaces that layer with a placeholder. Quit from the menu (or a later quit on the host) asks the lab to show the launcher again.
+The host boots to the menu. Play replaces that layer and owns the match. Esc pushes pause on top of play. Resume pops back to play. Quit to menu pops pause and replaces play with the menu. Quit from the menu asks the lab to show the launcher again.
 
 ```mermaid
 stateDiagram-v2
   [*] --> menu
   menu --> play: Play
   menu --> labLauncher: Quit
-  play --> labLauncher: Quit
+  play --> pause: Esc
+  pause --> play: Resume
+  pause --> menu: QuitToMenu
+```
+
+While pause is the top layer, `LayeredHost` sets play to `PROCESS_MODE_DISABLED`. Play's `_process` is what calls `step()`, so the match holds. The sim has no paused phase.
+
+```mermaid
+sequenceDiagram
+  participant Play
+  participant Host
+  participant Sim as GridwardSim
+  participant Board as GridwardBoard3D
+  Play->>Host: push pause
+  Note over Host: play process stops
+  Host->>Play: pop resume
+  Play->>Sim: step once or twice
+  Play->>Sim: place_tower or start_wave
+  Play->>Sim: drain_events
+  Play->>Board: sync_from_sim
 ```
 
 ## Match phases
 
-`GridwardSim` owns the match. `paused` is app-only: the host stops calling `step()`. The sim does not model pause.
+`GridwardSim` owns the match. Pause is app-only.
 
 ```mermaid
 stateDiagram-v2
@@ -54,13 +74,15 @@ When every entry has spawned and no enemies remain, that step enters `waveClear`
 
 ```mermaid
 sequenceDiagram
-  participant Host
+  participant Play
   participant Sim as GridwardSim
-  Host->>Sim: start_wave()
-  Host->>Sim: step()
+  Play->>Sim: start_wave()
+  Play->>Sim: step()
   Sim->>Sim: spawnDue
   Sim->>Sim: moveEnemies
   Sim->>Sim: resolveCombat
   Sim->>Sim: checkLeakAndClear
-  Host->>Sim: drain_events()
+  Play->>Sim: drain_events()
 ```
+
+At 2×, play calls `step()` a second time in that same frame before draining events.

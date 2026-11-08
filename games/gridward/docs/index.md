@@ -15,13 +15,12 @@ related_docs:
   - ../../../docs/index.md
   - ../../../docs/explanation/architecture.md
 keywords: [gridward, tower-defense, td, index, MapDef, catalog]
-last_reviewed: 2026-11-08
+last_reviewed: 2026-11-09
 ---
 
 # Gridward
 
-Solo-campaign **fixed-path tower defense** in 3D. Status: **scaffold and data
-model**. The lab launcher opens a layered host, menu, and play stub. `sim/`
+Solo-campaign **fixed-path tower defense** in 3D. Status: **Meadow sim, 3D board, and play HUD**. The lab launcher opens a layered host, menu, and play scene. `sim/`
 holds `GridwardConfig`, entity defs, `GridwardCatalog.build_meadow()`, and `GridwardBot`.
 
 Presentation lives in `app/`. Follow
@@ -34,13 +33,13 @@ under [plans/](plans/).
 |-----|---------|
 | [sim.md](reference/sim.md) | Config, defs, Meadow catalog, match API, and bot |
 | [balance.md](reference/balance.md) | Bounty, bonuses, upgrade curve, Meadow lane-holds |
-| [app.md](reference/app.md) | Host, menu, play stub |
+| [app.md](reference/app.md) | Host, menu, play HUD, pause |
 
 ## Explanation
 
 | Doc | Purpose |
 |-----|---------|
-| [flow.md](explanation/flow.md) | Menu, play, and stub build/wave phases |
+| [flow.md](explanation/flow.md) | Menu, play, pause, and match phases |
 
 ## Spec
 
