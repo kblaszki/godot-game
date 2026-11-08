@@ -22,7 +22,7 @@ last_reviewed: 2026-11-08
 
 Solo-campaign **fixed-path tower defense** in 3D. Status: **scaffold and data
 model**. The lab launcher opens a layered host, menu, and play stub. `sim/`
-holds `GridwardConfig`, entity defs, and `GridwardCatalog.build_meadow()`.
+holds `GridwardConfig`, entity defs, `GridwardCatalog.build_meadow()`, and `GridwardBot`.
 
 Presentation lives in `app/`. Follow
 [architecture](../../../docs/explanation/architecture.md) and the plan series
@@ -32,7 +32,7 @@ under [plans/](plans/).
 
 | Doc | Purpose |
 |-----|---------|
-| [sim.md](reference/sim.md) | Config, defs, Meadow catalog, and match API |
+| [sim.md](reference/sim.md) | Config, defs, Meadow catalog, match API, and bot |
 | [balance.md](reference/balance.md) | Bounty, bonuses, upgrade curve, Meadow lane-holds |
 | [app.md](reference/app.md) | Host, menu, play stub |
 

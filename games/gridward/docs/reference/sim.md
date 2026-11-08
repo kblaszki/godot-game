@@ -14,6 +14,7 @@ related_code:
   - games/gridward/sim/tower_state.gd
   - games/gridward/sim/projectile_state.gd
   - games/gridward/sim/gridward_sim.gd
+  - games/gridward/sim/gridward_bot.gd
   - games/gridward/sim/gridward_events.gd
   - tests/games/gridward/gridward_catalog_test.gd
   - tests/games/gridward/gridward_sim_test.gd
@@ -21,13 +22,14 @@ related_code:
   - tests/games/gridward/gridward_economy_test.gd
   - tests/games/gridward/gridward_lane_holds_test.gd
   - tests/games/gridward/gridward_roster_test.gd
+  - tests/games/gridward/gridward_bot_test.gd
 related_docs:
   - ../index.md
   - ../spec.md
   - balance.md
   - ../explanation/flow.md
   - ../../../../docs/explanation/architecture.md
-keywords: [gridward, sim, MapDef, GridwardCatalog, GridwardSim, WaveDef, Meadow, leak, towers, targeting, economy, early-call, armor, status, beam, slow]
+keywords: [gridward, sim, MapDef, GridwardCatalog, GridwardSim, GridwardBot, WaveDef, Meadow, leak, towers, targeting, economy, early-call, armor, status, beam, slow, bot]
 last_reviewed: 2026-11-08
 ---
 
@@ -82,7 +84,12 @@ classDiagram
   class TowerState
   class ProjectileState
   class GridwardEvents
+  class GridwardBot {
+    +act()
+  }
   class SeededRng
+  GridwardBot --> GridwardSim
+  GridwardBot --> GridwardCatalog
   GridwardSim --> MapDef
   GridwardSim --> GridwardCatalog
   GridwardSim --> GridwardConfig
@@ -99,7 +106,7 @@ classDiagram
   MapDef --> WaveDef
 ```
 
-`enemy(id)` and `tower(id)` return a new def on each call. An unknown id returns `null`. `GridwardConfig` is a separate tunable bag (Normal defaults). The catalog does not load files. The sim constructs its own `GridwardConfig` and a `SeededRng` from the constructor seed.
+`enemy(id)` and `tower(id)` return a new def on each call. An unknown id returns `null`. `GridwardConfig` is a separate tunable bag (Normal defaults). The catalog does not load files. The sim constructs its own `GridwardConfig` and a `SeededRng` from the constructor seed. `GridwardBot` is not owned by the sim. It calls the public match API.
 
 ## GridwardSim
 
@@ -375,3 +382,24 @@ Waypoints (cell indices), an orthogonal S from the west edge to the east edge:
 | 9 | grunt 8 / 40 / 0, then runner 8 / 30 / 360 |
 
 Waves 0–1 teach the grunt. Wave 2 introduces the runner. Wave 4 is a wider-spaced rest. Wave 9 is the mixed climax. The full enemy and tower tables above still exist on the catalog for later maps.
+
+## GridwardBot
+
+```gdscript
+func _init(sim: GridwardSim, catalog: GridwardCatalog) -> void
+func act() -> void
+```
+
+Headless utility player for Meadow on Normal. `act()` does at most one spend, then may call `start_wave`. It uses `place_tower`, `upgrade_tower`, `start_wave`, and the public getters. It does not sell, and it leaves targeting at `first`.
+
+Geometry and unlocks come from `GridwardCatalog.build_meadow()`. Upgrade prices go through `GridwardSim.upgrade_cost` with a Normal `GridwardConfig`. That is the same map and the same defaults `GridwardSim` builds for a Meadow match.
+
+| Step | Rule |
+|------|------|
+| Early bolts | While fewer than 2 towers are down, place on the buildable cell that adds the most waypoint length inside range. |
+| Bolt weight | On waves 0–2, and while fewer than 3 towers exist, bolt is the only type scored when it is affordable. Its score is path length × 1.35. |
+| Upgrade | When gold is above 1.5× the next tier cost, upgrade the lowest tier. Ties go to the longer path coverage, then the lower entity id. |
+| Later towers | Otherwise place again, up to 6, on a cell that adds at least 2 cells of path no current tower already covers. Skip the buy when gold already covers an upgrade and has not cleared the 1.5× line. |
+| Start | In `BUILD`, if none of those spends happen, `start_wave`. Two towers is the defense bar the opening gold can afford. Starting on that tick keeps the early-call bonus. |
+
+`tests/games/gridward/gridward_bot_test.gd` is the balance canary. See [balance.md](balance.md).

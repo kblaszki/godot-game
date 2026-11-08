@@ -10,11 +10,13 @@ related_code:
   - tests/games/gridward/gridward_economy_test.gd
   - tests/games/gridward/gridward_lane_holds_test.gd
   - tests/games/gridward/gridward_roster_test.gd
+  - tests/games/gridward/gridward_bot_test.gd
+  - games/gridward/sim/gridward_bot.gd
 related_docs:
   - sim.md
   - ../index.md
   - ../spec.md
-keywords: [gridward, economy, bounty, early-call, upgrade, lane-holds, Meadow, armor, slow, beam, burn]
+keywords: [gridward, economy, bounty, early-call, upgrade, lane-holds, Meadow, armor, slow, beam, burn, bot, canary]
 last_reviewed: 2026-11-08
 ---
 
@@ -103,3 +105,11 @@ Reference loadout, both tier-0 bolts, both buildable, total cost 100 of Meadow's
 | (8, 0) | bolt | north lane, one cell off the path |
 
 A bolt one cell beside a long straight covers `2 * sqrt(range^2 - 1)` cells. At range 2.5 that is about 4.58. Two of those chords are enough for the safety bar on waves 3–6.
+
+## Bot canary
+
+`GridwardBot` is the Meadow Normal balance canary. `test_bot_should_clear_meadow_normal` must reach `VICTORY` within 72000 ticks (20 minutes at 60 Hz). `test_bot_seed_sweep_should_not_softlock` runs seeds 1–10 and fails if `BUILD` lasts 180 ticks without a spend or a wave start.
+
+The bot spends only through the public API. It places bolts on cells that add the most uncovered path length, prefers bolt on the teach waves, upgrades when gold is above 1.5× the next tier cost, and starts the wave once those spends are idle. Opening gold buys the two-tower bar before the first upgrade. Targeting stays `first`.
+
+Meadow wave counts and enemy HP are unchanged. If the clear test fails, retune the bot before editing this wave table.
