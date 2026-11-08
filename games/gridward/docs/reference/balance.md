@@ -6,13 +6,15 @@ related_code:
   - games/gridward/sim/gridward_config.gd
   - games/gridward/sim/gridward_sim.gd
   - games/gridward/sim/gridward_catalog.gd
+  - games/gridward/sim/status_effect.gd
   - tests/games/gridward/gridward_economy_test.gd
   - tests/games/gridward/gridward_lane_holds_test.gd
+  - tests/games/gridward/gridward_roster_test.gd
 related_docs:
   - sim.md
   - ../index.md
   - ../spec.md
-keywords: [gridward, economy, bounty, early-call, upgrade, lane-holds, Meadow]
+keywords: [gridward, economy, bounty, early-call, upgrade, lane-holds, Meadow, armor, slow, beam, burn]
 last_reviewed: 2026-11-08
 ---
 
@@ -24,7 +26,7 @@ Numbers for Normal difficulty. Formulas match [spec.md](../spec.md) §7. The sim
 
 | Event | Formula | Meadow note |
 |-------|---------|-------------|
-| Kill bounty | `EnemyDef.bounty` (not scaled by wave or HP) | grunt 8, runner 10 |
+| Kill bounty | `EnemyDef.bounty` (not scaled by wave or HP) | grunt 8, runner 10, tank 18, swarm 3, flyer 14, boss 100 |
 | Wave clear | `25 + 5 * wave_index` | wave 0 pays 25, wave 1 pays 30 |
 | Early call | `min(40, floor(remaining_ticks / 30))` | only while the build timer remains |
 | Sell refund | `floor(invested * 0.70)` | tier-0 bolt (50) refunds 35 |
@@ -52,6 +54,23 @@ Tier `t → t+1`: `round(base_cost * 0.75 * pow(1.55, t))`. Godot `roundi` round
 | beam | 110 | 83 | 128 |
 
 Bolt tier 1 is damage 16 and range 2.7. Bolt tier 2 is damage 22 and range 2.916.
+
+Beam uses the same damage curve on both ends of the ramp. Tier 0 is 3 → 12. Tier 1 is `round(3 * 1.35) = 4` → `round(12 * 1.35) = 16`. Tier 2 is `round(3 * 1.35²) = 5` → `round(12 * 1.35²) = 22`.
+
+## Armor and statuses
+
+Weapon damage dealt is `max(min_damage, raw - armor)` with `min_damage` 1. Burn does not use this formula.
+
+| Hit | Raw | Armor | Dealt |
+|-----|-----|-------|-------|
+| Bolt vs tank | 12 | 4 | 8 |
+| Frost vs tank | 4 | 4 | 1 |
+| Bolt vs boss | 12 | 6 | 6 |
+| Beam first shot vs tank | 3 | 4 | 1 |
+
+Frost slow is 0.35 for 90 ticks. The cap is 0.60. Movement that step is `speed * (1 - slow)`. An equal or stronger frost refreshes the 90 ticks. A weaker slow does not replace a stronger one. Beam shots are 6 ticks apart and climb by 1 from the floor to the ceiling. A new target starts again at the floor. Burn stacks add up to 5. Each later tick deals `stacks * 1`. No catalog tower applies burn; `TowerDef.burn_stacks` wires it.
+
+Swarm bounty is 3 per body. A wave entry with `count` 5 spawns 5 swarm enemies.
 
 ## Wave HP
 

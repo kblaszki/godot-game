@@ -28,6 +28,18 @@ var kind: StringName = TowerDef.KIND_HITSCAN
 var splash_radius: float = 0.0
 var anti_air: bool = false
 var ground_only: bool = true
+var slow_factor: float = 0.0
+var slow_ticks: int = 0
+## Tier-0 beam ceiling. Zero means this tower does not ramp.
+var base_ramp: int = 0
+## Beam ceiling at the current tier.
+var ramp_damage: int = 0
+## Next beam shot. Resets to `damage` when the focus changes.
+var beam_damage: int = 0
+## Enemy entity the beam is ramping on, or -1.
+var focus_id: int = -1
+var burn_stacks: int = 0
+var burn_ticks: int = 0
 var targeting: StringName = TARGET_FIRST
 
 

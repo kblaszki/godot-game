@@ -173,6 +173,12 @@ func place_tower(cell: Vector2i, tower_id: StringName) -> int:
 	tower.splash_radius = definition.splash_radius
 	tower.anti_air = definition.anti_air
 	tower.ground_only = definition.ground_only
+	tower.slow_factor = definition.slow_factor
+	tower.slow_ticks = definition.slow_ticks
+	tower.base_ramp = definition.ramp_damage
+	tower.burn_stacks = definition.burn_stacks
+	tower.burn_ticks = definition.burn_ticks
+	tower.focus_id = -1
 	tower.targeting = TowerState.TARGET_FIRST
 	_apply_tier_stats(tower)
 	_gold -= definition.cost
@@ -271,6 +277,8 @@ func _spawn_due() -> void:
 		enemy.enemy_id = definition.id
 		enemy.hp = _scaled_hp(definition.hp)
 		enemy.speed = definition.speed
+		enemy.armor = definition.armor
+		enemy.is_air = definition.is_air
 		enemy.position = origin
 		_enemies.append(enemy)
 		_events.append(GridwardEvents.enemy_spawned(enemy.id, enemy.enemy_id, origin))
@@ -295,7 +303,8 @@ func _move_enemies() -> void:
 	var distance_scale := FixedTick.SEC
 	var kept: Array[EnemyState] = []
 	for enemy in _enemies:
-		var leaked := enemy.advance(enemy.speed * distance_scale, _map.waypoints)
+		var pace := enemy.speed * (1.0 - _current_slow(enemy))
+		var leaked := enemy.advance(pace * distance_scale, _map.waypoints)
 		if not leaked:
 			kept.append(enemy)
 			continue
@@ -381,6 +390,15 @@ func _apply_tier_stats(tower: TowerState) -> void:
 	var damage := float(tower.base_damage) * pow(_config.tier_damage_scale, float(tower.tier))
 	tower.damage = maxi(roundi(damage), 1)
 	tower.range = tower.base_range * pow(_config.tier_range_scale, float(tower.tier))
+	if tower.base_ramp <= 0:
+		tower.ramp_damage = 0
+		return
+	var ramp := float(tower.base_ramp) * pow(_config.tier_damage_scale, float(tower.tier))
+	tower.ramp_damage = maxi(roundi(ramp), tower.damage)
+	if tower.beam_damage < tower.damage:
+		tower.beam_damage = tower.damage
+	elif tower.beam_damage > tower.ramp_damage:
+		tower.beam_damage = tower.ramp_damage
 
 
 func _tower_at(cell: Vector2i) -> TowerState:
@@ -412,6 +430,7 @@ func _enemy_by_id(enemy_id: int) -> EnemyState:
 
 
 func _resolve_combat() -> void:
+	_tick_statuses()
 	_advance_projectiles()
 	_fire_towers()
 	_remove_dead()
@@ -423,10 +442,11 @@ func _fire_towers() -> void:
 			tower.cooldown -= 1
 		if tower.cooldown > 0:
 			continue
-		if tower.kind == TowerDef.KIND_CONTINUOUS:
-			continue
 		var target := _acquire(tower)
 		if target == null:
+			continue
+		if tower.kind == TowerDef.KIND_CONTINUOUS:
+			_fire_beam(tower, target)
 			continue
 		tower.cooldown = tower.cooldown_ticks
 		_events.append(GridwardEvents.tower_fired(tower.id, tower.tower_id, target.id, tower.kind))
@@ -434,6 +454,7 @@ func _fire_towers() -> void:
 			_launch(tower, target)
 		else:
 			_damage_enemy(target, tower.damage, tower.id)
+			_apply_on_hit_statuses(tower, target)
 
 
 func _launch(tower: TowerState, target: EnemyState) -> void:
@@ -541,35 +562,141 @@ func _path_distance(enemy: EnemyState) -> float:
 
 
 func _can_engage(anti_air: bool, ground_only: bool, enemy: EnemyState) -> bool:
-	var definition := _catalog.enemy(enemy.enemy_id)
-	var is_air := definition != null and definition.is_air
-	if is_air:
+	if enemy.is_air:
 		return anti_air and not ground_only
 	return true
 
 
-func _damage_enemy(enemy: EnemyState, raw: int, tower_entity_id: int) -> void:
-	var dealt := _apply_damage(enemy, raw)
-	_events.append(GridwardEvents.enemy_hit(enemy.id, dealt, enemy.hp, tower_entity_id))
+func _fire_beam(tower: TowerState, target: EnemyState) -> void:
+	if target.id != tower.focus_id:
+		tower.focus_id = target.id
+		tower.beam_damage = tower.damage
+	var raw := tower.beam_damage
+	tower.cooldown = tower.cooldown_ticks
+	_events.append(GridwardEvents.tower_fired(tower.id, tower.tower_id, target.id, tower.kind))
+	_damage_enemy(target, raw, tower.id)
+	_apply_on_hit_statuses(tower, target)
+	if tower.beam_damage < tower.ramp_damage:
+		tower.beam_damage += 1
+
+
+func _apply_on_hit_statuses(tower: TowerState, enemy: EnemyState) -> void:
 	if enemy.hp <= 0:
-		var bounty := _kill_bounty(enemy)
-		_gold += bounty
-		_events.append(GridwardEvents.enemy_killed(enemy.id, enemy.enemy_id, bounty, _gold))
+		return
+	_apply_slow(enemy, tower.slow_factor, tower.slow_ticks, tower.id)
+	_apply_burn(enemy, tower.burn_stacks, tower.burn_ticks, tower.id)
+
+
+func _damage_enemy(enemy: EnemyState, raw: int, tower_entity_id: int) -> void:
+	if enemy.hp <= 0:
+		return
+	var dealt := _apply_damage(enemy, raw)
+	_finish_hit(enemy, dealt, tower_entity_id)
+
+
+func _finish_hit(enemy: EnemyState, dealt: int, tower_entity_id: int) -> void:
+	_events.append(GridwardEvents.enemy_hit(enemy.id, dealt, enemy.hp, tower_entity_id))
+	if enemy.hp > 0:
+		return
+	var bounty := _kill_bounty(enemy)
+	_gold += bounty
+	_events.append(GridwardEvents.enemy_killed(enemy.id, enemy.enemy_id, bounty, _gold))
 
 
 ## Armor reduces the hit. Remaining damage is at least GridwardConfig.min_damage.
 func _apply_damage(enemy: EnemyState, raw: int) -> int:
-	var armor := 0
-	var definition := _catalog.enemy(enemy.enemy_id)
-	if definition != null:
-		armor = definition.armor
-	var dealt := raw - armor
+	var dealt := raw - enemy.armor
 	if dealt < _config.min_damage:
 		dealt = _config.min_damage
 	enemy.hp -= dealt
 	if enemy.hp < 0:
 		enemy.hp = 0
 	return dealt
+
+
+## Burn damage and duration decay. Runs after movement and before shots, so a
+## newly applied status lasts its full tick count on later steps.
+func _tick_statuses() -> void:
+	for enemy in _enemies:
+		if enemy.hp <= 0:
+			continue
+		var burn := _find_status(enemy, StatusEffect.BURN)
+		if burn != null and burn.remaining_ticks > 0:
+			var raw := int(burn.magnitude) * _config.burn_damage_per_stack
+			_damage_burn(enemy, raw, burn.source_id)
+		var kept: Array[StatusEffect] = []
+		for effect in enemy.statuses:
+			effect.remaining_ticks -= 1
+			if effect.remaining_ticks > 0:
+				kept.append(effect)
+		enemy.statuses = kept
+
+
+func _damage_burn(enemy: EnemyState, raw: int, source_id: int) -> void:
+	if raw <= 0 or enemy.hp <= 0:
+		return
+	enemy.hp -= raw
+	if enemy.hp < 0:
+		enemy.hp = 0
+	_finish_hit(enemy, raw, source_id)
+
+
+func _apply_slow(enemy: EnemyState, factor: float, ticks: int, source_id: int) -> void:
+	if factor <= 0.0 or ticks <= 0:
+		return
+	var capped := factor
+	if capped > _config.slow_cap:
+		capped = _config.slow_cap
+	if capped <= 0.0:
+		return
+	var existing := _find_status(enemy, StatusEffect.SLOW)
+	if existing != null and capped < existing.magnitude:
+		return
+	if existing == null:
+		existing = StatusEffect.new()
+		existing.kind = StatusEffect.SLOW
+		enemy.statuses.append(existing)
+	existing.magnitude = capped
+	existing.remaining_ticks = ticks
+	existing.source_id = source_id
+
+
+func _apply_burn(enemy: EnemyState, stacks: int, ticks: int, source_id: int) -> void:
+	if stacks <= 0 or ticks <= 0:
+		return
+	var existing := _find_status(enemy, StatusEffect.BURN)
+	if existing == null:
+		existing = StatusEffect.new()
+		existing.kind = StatusEffect.BURN
+		existing.magnitude = float(mini(stacks, _config.burn_max_stacks))
+		existing.remaining_ticks = ticks
+		existing.source_id = source_id
+		enemy.statuses.append(existing)
+		return
+	var combined := int(existing.magnitude) + stacks
+	if combined > _config.burn_max_stacks:
+		combined = _config.burn_max_stacks
+	existing.magnitude = float(combined)
+	existing.remaining_ticks = ticks
+	existing.source_id = source_id
+
+
+func _current_slow(enemy: EnemyState) -> float:
+	var effect := _find_status(enemy, StatusEffect.SLOW)
+	if effect == null:
+		return 0.0
+	if effect.magnitude < 0.0:
+		return 0.0
+	if effect.magnitude > 1.0:
+		return 1.0
+	return effect.magnitude
+
+
+func _find_status(enemy: EnemyState, kind: StringName) -> StatusEffect:
+	for effect in enemy.statuses:
+		if effect.kind == kind:
+			return effect
+	return null
 
 
 func _remove_dead() -> void:

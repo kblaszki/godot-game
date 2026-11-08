@@ -6,8 +6,11 @@ extends RefCounted
 var id: int = 0
 var enemy_id: StringName = &""
 var hp: int = 0
-## Cells per second.
+## Cells per second before slow.
 var speed: float = 0.0
+var armor: int = 0
+var is_air: bool = false
+var statuses: Array[StatusEffect] = []
 ## Position in cell space.
 var position: Vector2 = Vector2.ZERO
 ## Waypoint index at the start of the current segment.

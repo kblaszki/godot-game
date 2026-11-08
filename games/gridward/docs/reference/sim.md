@@ -10,6 +10,7 @@ related_code:
   - games/gridward/sim/wave_def.gd
   - games/gridward/sim/gridward_catalog.gd
   - games/gridward/sim/enemy_state.gd
+  - games/gridward/sim/status_effect.gd
   - games/gridward/sim/tower_state.gd
   - games/gridward/sim/projectile_state.gd
   - games/gridward/sim/gridward_sim.gd
@@ -19,13 +20,14 @@ related_code:
   - tests/games/gridward/gridward_towers_test.gd
   - tests/games/gridward/gridward_economy_test.gd
   - tests/games/gridward/gridward_lane_holds_test.gd
+  - tests/games/gridward/gridward_roster_test.gd
 related_docs:
   - ../index.md
   - ../spec.md
   - balance.md
   - ../explanation/flow.md
   - ../../../../docs/explanation/architecture.md
-keywords: [gridward, sim, MapDef, GridwardCatalog, GridwardSim, WaveDef, Meadow, leak, towers, targeting, economy, early-call]
+keywords: [gridward, sim, MapDef, GridwardCatalog, GridwardSim, WaveDef, Meadow, leak, towers, targeting, economy, early-call, armor, status, beam, slow]
 last_reviewed: 2026-11-08
 ---
 
@@ -76,6 +78,7 @@ classDiagram
   class TowerDef
   class GridwardConfig
   class EnemyState
+  class StatusEffect
   class TowerState
   class ProjectileState
   class GridwardEvents
@@ -84,6 +87,8 @@ classDiagram
   GridwardSim --> GridwardCatalog
   GridwardSim --> GridwardConfig
   GridwardSim --> EnemyState
+  GridwardSim --> StatusEffect
+  EnemyState --> StatusEffect
   GridwardSim --> TowerState
   GridwardSim --> ProjectileState
   GridwardSim --> GridwardEvents
@@ -154,16 +159,17 @@ func set_targeting(tower_entity_id: int, mode: StringName) -> void
 ```mermaid
 sequenceDiagram
   participant Sim as GridwardSim
+  Sim->>Sim: tickStatuses
   Sim->>Sim: advanceProjectiles
   Sim->>Sim: towersAcquireAndFire
   Sim->>Sim: removeDead
 ```
 
-Shells already in flight move first, at `ProjectileState.SPEED` (6) cells per second. A shell homes on its target while that enemy is alive, then splashes at the impact point. A new shell spawns at the tower cell and does not move until the next combat step.
+Status ticks run first. Burn deals `stacks * burn_damage_per_stack` with no armor, then every status loses one tick. Shells already in flight move next, at `ProjectileState.SPEED` (6) cells per second. A shell homes on its target while that enemy is alive, then splashes at the impact point. A new shell spawns at the tower cell and does not move until the next combat step.
 
 A tower with `cooldown` 0 and a target fires on that step, then waits `cooldown_ticks` combat steps. Bolt (30) fires on a step and again 30 combat steps later. Cooldown counts down only inside WAVE combat. No target leaves `cooldown` at 0.
 
-Acquire keeps enemies inside range (`distance <= range`), alive, and engageable. Air enemies are engageable only when `anti_air` is set and `ground_only` is clear, so bolt ignores flyers and flak can hit them. The default mode is `first`.
+Acquire keeps enemies inside range (`distance <= range`), alive, and engageable. Air enemies are engageable only when `anti_air` is set and `ground_only` is clear. Bolt and mortar are ground-only, so they ignore flyers. Flak is anti-air and not ground-only, so it hits flyers and ground. The default mode is `first`.
 
 | Mode | Winner |
 |------|--------|
@@ -175,9 +181,15 @@ Acquire keeps enemies inside range (`distance <= range`), alive, and engageable.
 
 Equal metrics keep the lowest entity id.
 
-`hitscan` (bolt, and frost or flak without their later specials) applies damage on the fire step. `projectile` (mortar) flies, then damages every engageable enemy within `splash_radius` of the impact, including the aim point. Full damage, no falloff. `continuous` (beam) does not fire; ramp is not implemented.
+`hitscan` (bolt, frost, flak) applies damage on the fire step. Frost then applies slow. `projectile` (mortar) flies, then damages every engageable enemy within `splash_radius` of the impact, including the aim point. Full damage, no falloff. Shells do not apply slow or burn. `continuous` (beam) uses the same cooldown and deals its current ramp damage on each shot.
 
-Each hit subtracts the enemy's armor and deals at least `min_damage`. HP does not go below 0. A kill removes the enemy, adds `EnemyDef.bounty` once (not scaled by the wave), and emits `enemy_killed`. Entering `WAVE_CLEAR` drops shells still in flight and adds the wave-clear bonus.
+Beam ramp starts at the tier-scaled floor (`damage`) and increases by 1 after each shot, up to the tier-scaled ceiling (`ramp_damage`). Tier 0 is 3, then 4, up through 12. A new target id resets the next shot to the floor. Losing the target without acquiring a new one keeps the stored ramp. The floor and ceiling both use `pow(tier_damage_scale, tier)` from the tier-0 values. Tier 1 is 4 → 16. Tier 2 is 5 → 22.
+
+Each weapon hit subtracts the enemy's armor and deals at least `min_damage`. Bolt against a tank (armor 4) deals 8. Frost against a tank deals 1. HP does not go below 0. A kill removes the enemy, adds `EnemyDef.bounty` once (not scaled by the wave), and emits `enemy_killed`. Entering `WAVE_CLEAR` drops shells still in flight and adds the wave-clear bonus.
+
+Movement uses `speed * (1 - slow)`. Slow magnitude is `min(slow_factor, slow_cap)`. A stronger or equal slow replaces the magnitude and sets `remaining_ticks` to the new duration. A weaker slow leaves the current effect unchanged. Frost is 0.35 for 90 ticks, under the 0.60 cap. The hit's step has already moved; the next `remaining_ticks` moves are slowed.
+
+Burn applies on hitscan and beam hits when `burn_stacks` is above 0. Stacks add up to `burn_max_stacks` (5) and the duration refreshes. No catalog tower sets burn. The DoT on later steps is `stacks * burn_damage_per_stack` and ignores armor.
 
 ### Spawn schedule
 
@@ -204,7 +216,10 @@ Spawned HP is `maxi(roundi(base_hp * pow(hp_scale, wave_index) * difficulty_hp),
 | `id` | Spawn order, starting at 0 for the match |
 | `enemy_id` | `EnemyDef.id` |
 | `hp` | Scaled hit points at spawn |
-| `speed` | Cells per second, copied from the def |
+| `speed` | Cells per second before slow, copied from the def |
+| `armor` | Subtracted from each weapon hit |
+| `is_air` | Flyer flag copied from the def |
+| `statuses` | Active `StatusEffect` values |
 | `position` | Cell-space point on the polyline |
 | `segment` | Waypoint index that starts the current segment |
 | `segment_distance` | Cells already traveled on that segment |
@@ -213,13 +228,17 @@ Spawned HP is `maxi(roundi(base_hp * pow(hp_scale, wave_index) * difficulty_hp),
 
 ## TowerState
 
-One placed tower. `damage` and `range` are the tier-scaled stats. `base_damage`, `base_range`, and `base_cost` stay at the tier-0 def so later tiers do not compound rounding. `invested` is gold spent on the build and upgrades. `cooldown` is ticks until the tower may fire. `targeting` is one of `TowerState.TARGET_FIRST`, `TARGET_LAST`, `TARGET_CLOSEST`, `TARGET_STRONGEST`, `TARGET_WEAKEST`.
+One placed tower. `damage` and `range` are the tier-scaled stats. `base_damage`, `base_range`, `base_cost`, and `base_ramp` stay at the tier-0 def so later tiers do not compound rounding. `ramp_damage` is the tier-scaled beam ceiling. `beam_damage` is the next beam shot. `focus_id` is the enemy that ramp is tracking, or `-1`. `slow_factor`, `slow_ticks`, `burn_stacks`, and `burn_ticks` are copied from the def at placement. `invested` is gold spent on the build and upgrades. `cooldown` is ticks until the tower may fire. `targeting` is one of `TowerState.TARGET_FIRST`, `TARGET_LAST`, `TARGET_CLOSEST`, `TARGET_STRONGEST`, `TARGET_WEAKEST`.
 
 `is_targeting_mode(mode) -> bool` accepts only those five modes.
 
 ## ProjectileState
 
 One shell. `SPEED` is 6 cells per second. `position` and `destination` are cell-space points. `splash_radius` 0 hits only `target_enemy_id`. Copied `damage`, `anti_air`, and `ground_only` stay with the shell after the tower is sold or upgraded.
+
+## StatusEffect
+
+One slow or burn. `kind` is `StatusEffect.SLOW` or `StatusEffect.BURN`. `magnitude` is the slow fraction or the burn stack count. `remaining_ticks` counts down at the start of combat, after movement. `source_id` is the tower entity that applied it.
 
 ## GridwardEvents
 
@@ -310,11 +329,11 @@ Ticks are `FixedTick` steps (1/60 s). Cooldowns and spawn spacing are already in
 | flyer | 36 | 1.6 | 14 | 0 | yes | | |
 | boss | 800 | 0.55 | 100 | 6 | | | yes |
 
-Published order: `GridwardCatalog.ENEMY_IDS`.
+Published order: `GridwardCatalog.ENEMY_IDS`. A wave entry's `count` is the number of bodies spawned, including swarm. `is_group` does not multiply that count.
 
 ## TowerDef
 
-`range` is cells. `kind` is `hitscan`, `projectile`, or `continuous` (`TowerDef.KIND_*`). `splash_radius` 0 is single-target. `slow_factor` 0 means no slow. `ramp_damage` 0 means damage does not ramp; a beam starts at `damage` and ramps to `ramp_damage`.
+`range` is cells. `kind` is `hitscan`, `projectile`, or `continuous` (`TowerDef.KIND_*`). `splash_radius` 0 is single-target. `slow_factor` 0 means no slow. `ramp_damage` 0 means damage does not ramp; a beam starts at `damage` and ramps to `ramp_damage`. `burn_stacks` 0 means no burn. Catalog towers leave burn at 0.
 
 | Id | Cost | Range | Cooldown | Damage | Kind | Extra |
 |----|------|-------|----------|--------|------|-------|

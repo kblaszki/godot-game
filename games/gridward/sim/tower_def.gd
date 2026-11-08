@@ -25,3 +25,7 @@ var anti_air: bool = false
 var ground_only: bool = true
 ## Beam damage ramps from damage up to this value. Zero means no ramp.
 var ramp_damage: int = 0
+## Burn stacks applied on hit. Zero means this tower does not burn.
+var burn_stacks: int = 0
+## Burn duration in ticks. Ignored when burn_stacks is 0.
+var burn_ticks: int = 0
