@@ -20,13 +20,13 @@ related_docs:
   - ../reference/sim.md
   - ../reference/balance.md
   - ../spec.md
-keywords: [gridward, flow, menu, map select, play, pause, results, stars, save, build, wave, victory, defeat, speed]
+keywords: [gridward, flow, menu, map select, play, pause, results, stars, save, build, wave, victory, defeat, speed, tutorial]
 last_reviewed: 2026-11-09
 ---
 
 # Gridward scene flow
 
-The host loads `GridwardProgress` and boots to the menu. Play opens map select. Start replaces that layer with the match for the chosen map and difficulty. Esc pushes pause on top of play. Resume pops back to play. Quit to menu pops pause and replaces play with the menu. Victory or defeat records the result and replaces play with results. Results can return to map select or the menu. Quit from the menu asks the lab to show the launcher again.
+The host loads `GridwardProgress` and boots to the menu. Play opens map select. Start replaces that layer with the match for the chosen map and difficulty. On Meadow, play shows a teach-then-test hint for the current wave. That hint reads sim phase and wave index and does not add a phase. Esc pushes pause on top of play. Resume pops back to play. Quit to menu pops pause and replaces play with the menu. Victory or defeat records the result and replaces play with results. Results can return to map select or the menu. Quit from the menu asks the lab to show the launcher again.
 
 ```mermaid
 stateDiagram-v2

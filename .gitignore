@@ -1,5 +1,6 @@
 # Godot 4+
 .godot/
+.godot_user/
 *.translation
 
 # pxl scratch builds (committed assets live under assets/ or games/*/assets/)

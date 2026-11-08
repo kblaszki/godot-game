@@ -22,6 +22,10 @@ const GHOST_BAD := Color(0.9, 0.22, 0.2, 0.5)
 
 const TRAUMA_DECAY := 2.4
 const TRAUMA_OFFSET := 0.42
+## Floor for a new enemy batch, then the slot count doubles when a wave exceeds it.
+const ENEMY_POOL_FLOOR := 8
+## Every map is 16×10. Instances live in this box so frustum culling keeps them.
+const ENEMY_BATCH_AABB := AABB(Vector3(-1.0, -1.0, -1.0), Vector3(20.0, 6.0, 14.0))
 
 var _camera: Camera3D
 var _pivot: Node3D
@@ -33,9 +37,14 @@ var _projectiles_root: Node3D
 var _fx_root: Node3D
 var _ghost: MeshInstance3D
 var _tower_nodes: Dictionary = {}
-var _enemy_nodes: Dictionary = {}
+## id -> last mirrored origin. Survives headless, where no meshes are built.
+var _enemy_anchors: Dictionary = {}
+## One MultiMeshInstance3D per enemy id. Instance slots grow and are reused.
+var _enemy_batches: Dictionary = {}
+var _enemy_capacity: Dictionary = {}
 var _projectile_nodes: Dictionary = {}
 var _trauma: float = 0.0
+var _shake_enabled: bool = true
 var _shake_time: float = 0.0
 var _focus: Vector3 = Vector3.ZERO
 var _board_center: Vector3 = Vector3.ZERO
@@ -62,7 +71,19 @@ func _process(delta: float) -> void:
 	_apply_camera()
 
 
+func set_shake_enabled(enabled: bool) -> void:
+	_shake_enabled = enabled
+	if not enabled:
+		_trauma = 0.0
+
+
+func is_shake_enabled() -> bool:
+	return _shake_enabled
+
+
 func add_trauma(amount: float) -> void:
+	if not _shake_enabled:
+		return
 	_trauma = clampf(_trauma + amount, 0.0, 1.0)
 
 
@@ -72,10 +93,42 @@ func get_trauma() -> float:
 
 ## Last mirrored enemy origin, or INF when that id is not on the board yet.
 func enemy_anchor(id: int) -> Vector3:
-	var node := _enemy_nodes.get(id) as Node3D
-	if node == null:
-		return Vector3(INF, INF, INF)
-	return node.position
+	if _enemy_anchors.has(id):
+		return _enemy_anchors[id]
+	return Vector3(INF, INF, INF)
+
+
+func enemy_pool_capacity(kind: StringName) -> int:
+	return int(_enemy_capacity.get(kind, 0))
+
+
+## Next MultiMesh slot count. Holds the current pool, else grows to at least 8.
+static func pooled_capacity(current: int, need: int) -> int:
+	if need <= 0 or current >= need:
+		return current
+	var grown := maxi(need, current * 2)
+	if grown < ENEMY_POOL_FLOOR:
+		return ENEMY_POOL_FLOOR
+	return grown
+
+
+## Radius, height, lift. Lift is extra for air so the shared mesh stays on the ground.
+static func enemy_metrics(enemy_id: StringName, is_air: bool) -> Vector3:
+	var radius := 0.2
+	if enemy_id == &"boss":
+		radius = 0.34
+	elif enemy_id == &"swarm":
+		radius = 0.12
+	var height := radius * 2.2
+	var lift := height * 0.5
+	if is_air:
+		lift = 0.85 + height * 0.5
+	return Vector3(radius, height, lift)
+
+
+static func enemy_origin(enemy: EnemyState) -> Vector3:
+	var metrics := enemy_metrics(enemy.enemy_id, enemy.is_air)
+	return point_to_world(enemy.position) + Vector3(0.0, metrics.z, 0.0)
 
 
 func get_camera() -> Camera3D:
@@ -370,21 +423,75 @@ func _sync_towers(towers: Array) -> void:
 
 
 func _sync_enemies(enemies: Array) -> void:
-	if not _use_meshes():
-		return
-	var live := {}
+	var grouped := {}
+	var anchors := {}
+	var live_kinds := {}
 	for item in enemies:
 		var enemy := item as EnemyState
 		if enemy == null:
 			continue
-		live[enemy.id] = true
-		var node := _enemy_nodes.get(enemy.id) as MeshInstance3D
-		if node == null:
-			node = _make_enemy(enemy)
-			_enemies_root.add_child(node)
-			_enemy_nodes[enemy.id] = node
-		_apply_enemy(node, enemy)
-	_drop_missing(_enemy_nodes, live)
+		var origin := enemy_origin(enemy)
+		anchors[enemy.id] = origin
+		var kind := enemy.enemy_id
+		var bucket: Array = grouped.get(kind, [])
+		bucket.append(origin)
+		grouped[kind] = bucket
+		live_kinds[kind] = true
+	_enemy_anchors = anchors
+	if not _use_meshes():
+		return
+	for kind in grouped.keys():
+		_fill_enemy_batch(StringName(kind), grouped[kind])
+	for kind in _enemy_batches.keys():
+		if live_kinds.has(kind):
+			continue
+		var batch := _enemy_batches[kind] as MultiMeshInstance3D
+		if batch == null or batch.multimesh == null:
+			continue
+		batch.visible = false
+		batch.multimesh.visible_instance_count = 0
+
+
+func _fill_enemy_batch(kind: StringName, origins: Array) -> void:
+	var batch := _enemy_batch(kind)
+	var mm := batch.multimesh
+	if mm == null:
+		return
+	var need := origins.size()
+	var cap := pooled_capacity(int(_enemy_capacity.get(kind, 0)), need)
+	if cap != int(_enemy_capacity.get(kind, 0)):
+		mm.instance_count = cap
+		_enemy_capacity[kind] = cap
+	batch.visible = true
+	mm.visible_instance_count = need
+	for i in need:
+		var origin: Vector3 = origins[i]
+		mm.set_instance_transform(i, Transform3D(Basis.IDENTITY, origin))
+
+
+func _enemy_batch(kind: StringName) -> MultiMeshInstance3D:
+	var existing := _enemy_batches.get(kind) as MultiMeshInstance3D
+	if existing != null:
+		return existing
+	var metrics := enemy_metrics(kind, false)
+	var mesh := CylinderMesh.new()
+	mesh.top_radius = metrics.x
+	mesh.bottom_radius = metrics.x
+	mesh.height = metrics.y
+	var mm := MultiMesh.new()
+	mm.transform_format = MultiMesh.TRANSFORM_3D
+	mm.mesh = mesh
+	mm.custom_aabb = ENEMY_BATCH_AABB
+	var batch := MultiMeshInstance3D.new()
+	batch.name = "EnemyBatch_%s" % str(kind)
+	batch.multimesh = mm
+	var mat := StandardMaterial3D.new()
+	mat.roughness = 0.62
+	mat.albedo_color = _enemy_color(kind)
+	batch.material_override = mat
+	_enemies_root.add_child(batch)
+	_enemy_batches[kind] = batch
+	return batch
 
 
 func _sync_projectiles(shots: Array) -> void:
@@ -436,36 +543,6 @@ func _apply_tower(node: MeshInstance3D, tower: TowerState) -> void:
 	if mat != null:
 		mat.albedo_color = _tower_color(tower.tower_id)
 	node.position = cell_to_world(tower.cell) + Vector3(0.0, height * 0.5, 0.0)
-
-
-func _make_enemy(enemy: EnemyState) -> MeshInstance3D:
-	var node := MeshInstance3D.new()
-	node.name = "Enemy%d" % enemy.id
-	node.mesh = CylinderMesh.new()
-	var mat := StandardMaterial3D.new()
-	mat.roughness = 0.62
-	mat.albedo_color = _enemy_color(enemy.enemy_id)
-	node.material_override = mat
-	_apply_enemy(node, enemy)
-	return node
-
-
-func _apply_enemy(node: MeshInstance3D, enemy: EnemyState) -> void:
-	var radius := 0.2
-	if enemy.enemy_id == &"boss":
-		radius = 0.34
-	elif enemy.enemy_id == &"swarm":
-		radius = 0.12
-	var height := radius * 2.2
-	var cyl := node.mesh as CylinderMesh
-	if cyl != null:
-		cyl.top_radius = radius
-		cyl.bottom_radius = radius
-		cyl.height = height
-	var lift := height * 0.5
-	if enemy.is_air:
-		lift = 0.85 + height * 0.5
-	node.position = point_to_world(enemy.position) + Vector3(0.0, lift, 0.0)
 
 
 func _place_ghost() -> void:
@@ -522,6 +599,8 @@ func _apply_camera() -> void:
 
 
 func _shake_offset() -> Vector3:
+	if not _shake_enabled:
+		return Vector3.ZERO
 	var shake := _trauma * _trauma
 	if shake <= 0.000001:
 		return Vector3.ZERO
@@ -533,10 +612,7 @@ func _shake_offset() -> Vector3:
 
 
 func flash_enemy(id: int) -> void:
-	if not _use_meshes() or _fx_root == null:
-		return
-	var node := _enemy_nodes.get(id) as MeshInstance3D
-	if node == null:
+	if not _use_meshes() or _fx_root == null or not _enemy_anchors.has(id):
 		return
 	var flash := MeshInstance3D.new()
 	var cyl := CylinderMesh.new()
@@ -545,7 +621,7 @@ func flash_enemy(id: int) -> void:
 	cyl.height = 0.5
 	flash.mesh = cyl
 	flash.material_override = _flash_mat(Color(1.0, 0.95, 0.75, 0.85))
-	flash.position = node.position
+	flash.position = _enemy_anchors[id]
 	_fx_root.add_child(flash)
 	var tw := create_tween()
 	tw.tween_property(flash, "scale", Vector3(1.35, 1.15, 1.35), 0.08)
@@ -553,10 +629,7 @@ func flash_enemy(id: int) -> void:
 
 
 func pop_enemy(id: int, enemy_id: StringName) -> void:
-	if not _use_meshes() or _fx_root == null:
-		return
-	var node := _enemy_nodes.get(id) as MeshInstance3D
-	if node == null:
+	if not _use_meshes() or _fx_root == null or not _enemy_anchors.has(id):
 		return
 	var pop := MeshInstance3D.new()
 	var cyl := CylinderMesh.new()
@@ -565,7 +638,7 @@ func pop_enemy(id: int, enemy_id: StringName) -> void:
 	cyl.height = 0.4
 	pop.mesh = cyl
 	pop.material_override = _flash_mat(_enemy_color(enemy_id))
-	pop.position = node.position
+	pop.position = _enemy_anchors[id]
 	_fx_root.add_child(pop)
 	var tw := create_tween()
 	tw.tween_property(pop, "scale", Vector3(1.5, 1.7, 1.5), 0.08).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)

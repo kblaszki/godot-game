@@ -44,6 +44,9 @@ var _hovering: bool = false
 var _hover_local: Vector2 = Vector2.ZERO
 var _skip_sim_steps: int = 0
 var _icon_textures: Dictionary = {}
+var _shake_enabled: bool = true
+var _tutorial: Label
+var _shake_button: Button
 
 @onready var _svc: SubViewportContainer = $BoardRoot/SubViewportContainer
 @onready var _viewport: SubViewport = $BoardRoot/SubViewportContainer/SubViewport
@@ -85,6 +88,60 @@ func is_speed_2x() -> bool:
 	return _speed_2x
 
 
+func is_screen_shake_enabled() -> bool:
+	return _shake_enabled
+
+
+func set_screen_shake(enabled: bool) -> void:
+	_shake_enabled = enabled
+	if _board != null:
+		_board.set_shake_enabled(enabled)
+	_refresh_shake_button()
+
+
+func tutorial_text() -> String:
+	if _map == null or _sim == null or _map.id != GridwardCatalog.MEADOW:
+		return ""
+	return meadow_hint(_sim.get_wave_index(), _sim.get_phase(), _sim.get_towers().is_empty())
+
+
+## Meadow only. Teach a wave, then the next wave tests it. Other phases stay short.
+static func meadow_hint(wave_index: int, phase: int, no_towers: bool) -> String:
+	if phase == GridwardSim.Phase.VICTORY or phase == GridwardSim.Phase.DEFEAT:
+		return ""
+	if phase == GridwardSim.Phase.WAVE_CLEAR:
+		return "Wave clear. Place or upgrade, then start the next wave."
+	match wave_index:
+		0:
+			if phase == GridwardSim.Phase.BUILD and no_towers:
+				return "Teach: click grass beside the path to place a Bolt. It fires by itself."
+			if phase == GridwardSim.Phase.BUILD:
+				return "Teach: press Start Wave. Four slow grunts walk the lane."
+			return "Grunts are slow. The bolt fires on its own."
+		1:
+			return "Test: six grunts. Hold the lane with the bolt you placed."
+		2:
+			if phase == GridwardSim.Phase.WAVE:
+				return "Runners are faster than grunts. Bolts only hit what is in range."
+			return "Teach: runners are faster. A second Bolt covers more of the path."
+		3:
+			return "Test: grunts, then runners. One lane, two speeds."
+		4:
+			return "Rest: wider gaps. Upgrade the selected Bolt when you can pay."
+		5:
+			return "Test: a runner rush. Keep the path inside bolt range."
+		6:
+			return "Test: grunts and runners together. Cover the lane before you start."
+		7:
+			return "Test: a grunt pack. Damage along the path beats one late shot."
+		8:
+			return "Test: runners only. Each leak costs a life."
+		9:
+			return "Last: grunts and runners. Clear Meadow to open Bend."
+		_:
+			return ""
+
+
 func toggle_speed() -> void:
 	_speed_2x = not _speed_2x
 	_refresh_hud()
@@ -109,7 +166,10 @@ func _ready() -> void:
 	_upgrade.pressed.connect(_upgrade_selected)
 	_sell.pressed.connect(_sell_selected)
 	_build_tower_buttons()
+	_build_shake_toggle()
+	_build_tutorial()
 	_selected_type = _default_type()
+	_board.set_shake_enabled(_shake_enabled)
 	_board.sync_from_sim(_sim)
 	_board.fit(_svc.size)
 	_refresh_hud()
@@ -533,6 +593,63 @@ func _load_tower_icons() -> void:
 		_icon_textures[tower_id] = atlas
 
 
+func _build_shake_toggle() -> void:
+	var button := Button.new()
+	button.name = "Shake"
+	button.custom_minimum_size = Vector2(0, 36)
+	button.focus_mode = Control.FOCUS_ALL
+	button.pressed.connect(_toggle_shake)
+	_style_button(button, Color(0.18, 0.32, 0.42, 1), false)
+	_speed.get_parent().add_child(button)
+	_shake_button = button
+	_wave_card.offset_bottom = 160.0
+	_refresh_shake_button()
+
+
+func _toggle_shake() -> void:
+	set_screen_shake(not _shake_enabled)
+
+
+func _refresh_shake_button() -> void:
+	if _shake_button == null:
+		return
+	_shake_button.text = "Shake On" if _shake_enabled else "Shake Off"
+
+
+func _build_tutorial() -> void:
+	var panel := PanelContainer.new()
+	panel.name = "TutorialHint"
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.anchor_left = 0.5
+	panel.anchor_right = 0.5
+	panel.offset_left = -280.0
+	panel.offset_right = 280.0
+	panel.offset_top = 16.0
+	panel.offset_bottom = 96.0
+	panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	var label := Label.new()
+	label.name = "Text"
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", 15)
+	label.add_theme_color_override("font_color", Color(0.96, 0.97, 1, 1))
+	panel.add_child(label)
+	add_child(panel)
+	_style_panel(panel, Color(0.07, 0.1, 0.09, 0.92))
+	_tutorial = label
+
+
+func _refresh_tutorial() -> void:
+	if _tutorial == null:
+		return
+	var text := tutorial_text()
+	_tutorial.text = text
+	var panel := _tutorial.get_parent() as CanvasItem
+	if panel != null:
+		panel.visible = text != ""
+
+
 func _fill_targeting() -> void:
 	for mode in TARGET_MODES:
 		_targeting.add_item(str(mode).capitalize())
@@ -559,6 +676,7 @@ func _refresh_hud() -> void:
 	_syncing_ui = false
 	_refresh_start()
 	_refresh_tower_panel()
+	_refresh_tutorial()
 
 
 func _refresh_start() -> void:

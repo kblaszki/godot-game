@@ -38,7 +38,7 @@ last_reviewed: 2026-11-09
 
 # Gridward sim
 
-Headless content and match loop. `GridwardCatalog` builds defs in code. `GridwardSim` steps the match from those defs. Scripts under `games/gridward/sim/` are `RefCounted` and stay free of `Node`, the scene tree, wall-clock `Time`, unseeded RNG, and `FileAccess`.
+Headless content and match loop. `GridwardCatalog` builds defs in code. `GridwardSim` steps the match from those defs. Scripts under `games/gridward/sim/` are `RefCounted` and stay free of `Node`, the scene tree, wall-clock `Time`, unseeded RNG, and `FileAccess`. Shipped v1 keeps the fixed path: no maze rebuild and no multiplayer.
 
 Product numbers are copied from [spec.md](../spec.md) §§5–9. Phase transitions are drawn in [flow.md](../explanation/flow.md).
 

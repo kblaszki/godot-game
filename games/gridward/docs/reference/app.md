@@ -36,7 +36,7 @@ related_docs:
   - ../../../../docs/reference/lab-shell.md
   - ../../../../docs/reference/engine-scene-stack.md
   - ../../../../docs/how-to/make-pixel-art.md
-keywords: [gridward, app, host, menu, map select, results, progress, play, pause, HUD, build bar, LayeredHost, GridwardBoard3D, camera, cell pick, juice, audio, icons, trauma, hit-stop]
+keywords: [gridward, app, host, menu, map select, results, progress, play, pause, HUD, build bar, tutorial, shake, LayeredHost, GridwardBoard3D, camera, cell pick, juice, audio, icons, trauma, hit-stop, MultiMesh, pool]
 last_reviewed: 2026-11-09
 ---
 
@@ -117,9 +117,14 @@ Play embeds `GridwardBoard3D` in a `SubViewport`, builds the host's selected map
 | Corner / dock | Shows |
 |---------------|--------|
 | Top left `LivesGold` | Lives, gold |
-| Top right `WaveCard` | Wave index, 1× / 2× button |
+| Top center `TutorialHint` | Meadow teach-then-test line; hidden on other maps |
+| Top right `WaveCard` | Wave index, 1× / 2×, Shake On / Off |
 | Right `TowerPanel` | Selected tower: upgrade cost, sell, targeting |
 | Bottom `BottomDock` | Next or current wave, build bar 1–5, Start Wave / Early Call, Menu |
+
+On Meadow, a top-center `TutorialHint` label follows `meadow_hint`. Wave 0 teaches placing a bolt, wave 1 tests a larger grunt pack, wave 2 teaches runners, and later waves test the mix. Victory, defeat, and every other map hide the label. The text does not change gold, lives, or placement.
+
+The wave card includes Shake. It defaults to Shake On. Shake Off calls `GridwardBoard3D.set_shake_enabled(false)`, which clears trauma and ignores new trauma until it is turned on again. `LabSettings` only stores display mode and resolution, so this flag is not written by `SettingsStore`.
 
 The build bar lists `GridwardCatalog.TOWER_IDS` in order. Each button shows that tower's frame from `games/gridward/assets/pxl/icons.png`, parsed with `PxlSheet`, as an `AtlasTexture` with `TEXTURE_FILTER_NEAREST` and `expand_icon` off. The source is `art/gridward/icons.px.js` ([make pixel art](../../../../docs/how-to/make-pixel-art.md)). A type the map has not unlocked is disabled. Meadow starts with bolt selected. LMB on an empty buildable cell calls `place_tower` for the selected type. LMB on a tower selects it and opens the panel. RMB sells the tower under the cursor, or the selected tower when the cursor is on empty ground. Upgrade uses `GridwardSim.upgrade_cost` with default `GridwardConfig` factors, the same defaults the sim constructs. Sell calls `sell_tower`. The targeting list calls `set_targeting`.
 
@@ -153,7 +158,9 @@ One world unit is one cell. `cell_to_world` is the cell center on Y=0: cell `(x,
 
 `cell_at_screen` casts the camera ray onto Y=0. A miss returns `MISS_CELL` (`Vector2i(2147483647, 2147483647)`), the integer stand-in for INF. `set_ghost` shows a green or red column, and hides it for `MISS_CELL`.
 
-Cells, the path, towers, enemies, and in-flight shells are boxes, cylinders, and spheres parented to `BoardPivot3D`. Shells mirror `get_projectiles()`. The pivot stays put. Orbit, pan, dolly, and fit move `Camera3D` around the board center at about 40° pitch. Trauma adds a decaying offset to that camera pose only. `DisplayServer` headless (or the headless feature) skips every `MeshInstance3D`, including the ghost, shells, and juice meshes. Lights and the camera rig still exist.
+Cells, the path, towers, and in-flight shells are boxes, cylinders, and spheres parented to `BoardPivot3D`. Shells mirror `get_projectiles()`. Enemies share one `MultiMeshInstance3D` per id under `Enemies`. `pooled_capacity` keeps at least 8 slots and doubles when a wave needs more. `visible_instance_count` is the live count, so a cleared wave does not free the batch. Each map is 16×10, and the batch AABB covers that board so instances are not culled. `enemy_metrics` is radius, height, and lift. `enemy_origin` is the world point stored per id. Tracers, flashes, and pops read `enemy_anchor` from that store.
+
+The pivot stays put. Orbit, pan, dolly, and fit move `Camera3D` around the board center at about 40° pitch. Trauma adds a decaying offset to that camera pose only, and only while shake is enabled. `DisplayServer` headless (or the headless feature) skips mesh nodes, including MultiMesh batches, the ghost, shells, and juice meshes. Anchors still update. Lights and the camera rig still exist.
 
 ## Feedback
 

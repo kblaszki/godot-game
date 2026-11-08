@@ -12,7 +12,7 @@ related_docs:
   - ../../../docs/explanation/architecture.md
   - ../../../.cursor/skills/genre-playbooks/references/tower-defense.md
 keywords: [gridward, tower-defense, spec, waves, towers, campaign]
-last_reviewed: 2026-11-08
+last_reviewed: 2026-11-09
 ---
 
 # Gridward — product and systems specification
@@ -215,6 +215,11 @@ sequenceDiagram
 - Sim speed: 1× or 2× (host calls `step()` once or twice per frame).
 - HUD: lives, gold, wave index, build bar (1–5), selected tower panel
   (upgrade / sell / targeting), next-wave preview, Start Wave / Early Call.
+- Meadow shows a teach-then-test hint for the current wave. Other maps do not.
+  The hint is presentation only.
+- Enemies draw as one MultiMesh batch per id. Slot capacity starts at 8 and doubles.
+- Shake defaults on. The play screen can turn camera trauma off for the session.
+  `LabSettings` does not store that flag.
 - Scenes: `menu`, `map_select`, `play`, `pause_menu`, `results` under
   `games/gridward/app/`; host extends `LayeredHost`.
 
@@ -261,7 +266,7 @@ endless mode, hero units.
 | Risk | Mitigation |
 |------|------------|
 | Balance swings | Bot harness + lane-holds GUT (plans 05, 07) |
-| 3D draw cost | MultiMesh / pooling (plan 12) |
+| 3D draw cost | One MultiMesh per enemy id, pooled instance slots (`board_3d.gd`) |
 | Scope creep | Fixed path only; 5 maps; follow plans 01–12 |
 
 ## 16. Definition of shipped

@@ -99,6 +99,66 @@ func test_trauma_should_offset_only_the_camera() -> void:
 	assert_gt(board.get_trauma(), 0.8)
 
 
+func test_enemy_pool_capacity_should_grow_then_hold() -> void:
+	assert_eq(GridwardBoard3D.pooled_capacity(0, 0), 0)
+	assert_eq(GridwardBoard3D.pooled_capacity(0, 3), 8)
+	assert_eq(GridwardBoard3D.pooled_capacity(8, 9), 16)
+	assert_eq(GridwardBoard3D.pooled_capacity(16, 4), 16)
+
+
+func test_enemy_origin_should_lift_flyers() -> void:
+	var flyer := EnemyState.new()
+	flyer.enemy_id = &"flyer"
+	flyer.is_air = true
+	flyer.position = Vector2(2, 3)
+	var origin := GridwardBoard3D.enemy_origin(flyer)
+	var ground := GridwardBoard3D.point_to_world(flyer.position)
+	assert_almost_eq(origin.x, ground.x, 0.0001)
+	assert_gt(origin.y, ground.y + 0.8)
+	assert_almost_eq(origin.z, ground.z, 0.0001)
+	var grunt := EnemyState.new()
+	grunt.enemy_id = &"grunt"
+	grunt.position = flyer.position
+	assert_lt(GridwardBoard3D.enemy_origin(grunt).y, origin.y)
+
+
+func test_headless_sync_should_anchor_enemies_without_batches() -> void:
+	var board: GridwardBoard3D = load("res://games/gridward/app/board_3d.tscn").instantiate()
+	add_child_autofree(board)
+	await wait_frames(1)
+	var sim := GridwardSim.new(GridwardCatalog.build_meadow(), GridwardCatalog.new(), 3)
+	assert_true(sim.start_wave())
+	sim.step()
+	var enemy := sim.get_enemies()[0] as EnemyState
+	board.sync_from_sim(sim)
+	var origin := GridwardBoard3D.enemy_origin(enemy)
+	var anchor := board.enemy_anchor(enemy.id)
+	assert_almost_eq(anchor.x, origin.x, 0.0001)
+	assert_almost_eq(anchor.y, origin.y, 0.0001)
+	assert_almost_eq(anchor.z, origin.z, 0.0001)
+	var enemies := board.get_node("BoardPivot3D/Enemies") as Node3D
+	assert_eq(enemies.get_child_count(), 0)
+	assert_eq(board.enemy_pool_capacity(enemy.enemy_id), 0)
+	var idle := GridwardSim.new(GridwardCatalog.build_meadow(), GridwardCatalog.new(), 3)
+	board.sync_from_sim(idle)
+	assert_true(is_inf(board.enemy_anchor(enemy.id).x))
+
+
+func test_shake_toggle_should_ignore_trauma() -> void:
+	var board := GridwardBoard3D.new()
+	board.add_trauma(1.0)
+	assert_gt(board.get_trauma(), 0.9)
+	board.set_shake_enabled(false)
+	assert_false(board.is_shake_enabled())
+	assert_eq(board.get_trauma(), 0.0)
+	board.add_trauma(1.0)
+	assert_eq(board.get_trauma(), 0.0)
+	board.set_shake_enabled(true)
+	board.add_trauma(0.4)
+	assert_gt(board.get_trauma(), 0.3)
+	board.free()
+
+
 func _mesh_count(node: Node) -> int:
 	var count := 0
 	if node is MeshInstance3D:

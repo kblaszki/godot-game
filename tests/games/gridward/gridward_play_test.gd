@@ -89,6 +89,45 @@ func test_speed_toggle_should_double_steps_per_frame() -> void:
 	assert_eq(stub.step_count, 1)
 
 
+func test_meadow_tutorial_should_teach_then_test() -> void:
+	var play = await _new_play()
+	assert_true(play.meadow_hint(0, GridwardSim.Phase.BUILD, true).begins_with("Teach:"))
+	assert_true(play.meadow_hint(1, GridwardSim.Phase.BUILD, false).begins_with("Test:"))
+	assert_true(play.meadow_hint(2, GridwardSim.Phase.BUILD, false).begins_with("Teach:"))
+	assert_true(play.meadow_hint(5, GridwardSim.Phase.BUILD, false).begins_with("Test:"))
+	assert_eq(play.meadow_hint(0, GridwardSim.Phase.VICTORY, false), "")
+	var hint := play.get_node("TutorialHint/Text") as Label
+	assert_true(hint.text.begins_with("Teach:"))
+	assert_true(hint.text.contains("Bolt"))
+	assert_true((play.get_node("TutorialHint") as CanvasItem).visible)
+	assert_gt(play.place_selected_at(Vector2i(0, 0)), -1)
+	assert_true(hint.text.contains("Start Wave"))
+	var start := play.get_node("BottomDock/Margin/Column/ActionRow/StartWave") as Button
+	start.pressed.emit()
+	assert_true(hint.text.contains("Grunts"))
+	var bend := GridwardCatalog.build_bend()
+	play.bind_sim(GridwardSim.new(bend, GridwardCatalog.new(), 1), bend)
+	assert_eq(play.tutorial_text(), "")
+	assert_false((play.get_node("TutorialHint") as CanvasItem).visible)
+
+
+func test_shake_button_should_block_leak_trauma() -> void:
+	var play = await _new_play()
+	var board := play.get_node("BoardRoot/SubViewportContainer/SubViewport/Board3D") as GridwardBoard3D
+	var button := play.get_node("WaveCard/Margin/Column/Shake") as Button
+	assert_eq(button.text, "Shake On")
+	assert_true(play.is_screen_shake_enabled())
+	assert_true(board.is_shake_enabled())
+	button.pressed.emit()
+	assert_eq(button.text, "Shake Off")
+	assert_false(board.is_shake_enabled())
+	play._dispatch_events([GridwardEvents.enemy_leaked(1, &"runner", 19)])
+	assert_eq(board.get_trauma(), 0.0)
+	button.pressed.emit()
+	play._dispatch_events([GridwardEvents.enemy_leaked(2, &"runner", 19)])
+	assert_gt(board.get_trauma(), 0.5)
+
+
 func _new_play():
 	var play = load(PLAY_PATH).instantiate()
 	play.process_mode = Node.PROCESS_MODE_DISABLED
