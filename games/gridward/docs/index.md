@@ -7,21 +7,37 @@ related_code:
   - tests/games/gridward/
 related_docs:
   - spec.md
+  - reference/sim.md
+  - reference/app.md
+  - explanation/flow.md
   - plans/00-roadmap.md
   - ../../../docs/index.md
   - ../../../docs/explanation/architecture.md
-keywords: [gridward, tower-defense, td, index, planned]
+keywords: [gridward, tower-defense, td, index, scaffold]
 last_reviewed: 2026-11-08
 ---
 
 # Gridward
 
-Solo-campaign **fixed-path tower defense** in 3D. Status: **planned** (docs and
-implementation plans only; no `sim/` / `app/` code yet).
+Solo-campaign **fixed-path tower defense** in 3D. Status: **scaffold**. The lab
+launcher opens a layered host, menu, and play stub. `sim/` has no rules yet.
 
 Headless rules will live in `sim/`; presentation in `app/`. Follow
 [architecture](../../../docs/explanation/architecture.md) and the plan series
 under [plans/](plans/).
+
+## Reference
+
+| Doc | Purpose |
+|-----|---------|
+| [sim.md](reference/sim.md) | Placeholder `sim/` (no types yet) |
+| [app.md](reference/app.md) | Host, menu, play stub |
+
+## Explanation
+
+| Doc | Purpose |
+|-----|---------|
+| [flow.md](explanation/flow.md) | Menu, play, and stub build/wave phases |
 
 ## Spec
 
