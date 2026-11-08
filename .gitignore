@@ -2,6 +2,9 @@
 .godot/
 *.translation
 
+# pxl scratch builds (committed assets live under assets/ or games/*/assets/)
+art/**/out/
+
 # Imports / OS
 .import/
 .DS_Store

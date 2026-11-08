@@ -9,6 +9,7 @@ const GAMES := [
 	{"title": "Fairway Circuit", "host_path": "res://games/minigolf/app/host.tscn"},
 ]
 const SETTINGS_PATH := "res://lab/settings.tscn"
+const PIXEL_GALLERY_PATH := "res://lab/pixel_gallery.tscn"
 
 @onready var _column: VBoxContainer = $Center/Column
 
@@ -24,6 +25,11 @@ func _ready() -> void:
 		if _column.get_child_count() == 3:
 			# Title + Hint are first; first game button gets focus.
 			button.grab_focus()
+	var gallery := Button.new()
+	gallery.custom_minimum_size = Vector2(280, 44)
+	gallery.text = "Pixel Gallery"
+	gallery.pressed.connect(_on_pixel_gallery_pressed)
+	_column.add_child(gallery)
 	var settings := Button.new()
 	settings.custom_minimum_size = Vector2(280, 44)
 	settings.text = "Settings"
@@ -40,9 +46,12 @@ func _on_game_pressed(host_path: String) -> void:
 	_submit(SceneRequest.replace(host_path))
 
 
+func _on_pixel_gallery_pressed() -> void:
+	_submit(SceneRequest.replace(PIXEL_GALLERY_PATH))
+
+
 func _on_settings_pressed() -> void:
 	_submit(SceneRequest.replace(SETTINGS_PATH))
-
 
 func _on_quit_pressed() -> void:
 	_submit(SceneRequest.quit())

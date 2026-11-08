@@ -1,0 +1,148 @@
+{
+ "frames": {
+  "coin_spin_0": {
+   "frame": {
+    "x": 0,
+    "y": 0,
+    "w": 14,
+    "h": 14
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 14,
+    "h": 14
+   },
+   "sourceSize": {
+    "w": 14,
+    "h": 14
+   },
+   "duration": 100
+  },
+  "coin_spin_1": {
+   "frame": {
+    "x": 14,
+    "y": 0,
+    "w": 14,
+    "h": 14
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 14,
+    "h": 14
+   },
+   "sourceSize": {
+    "w": 14,
+    "h": 14
+   },
+   "duration": 100
+  },
+  "coin_spin_2": {
+   "frame": {
+    "x": 28,
+    "y": 0,
+    "w": 14,
+    "h": 14
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 14,
+    "h": 14
+   },
+   "sourceSize": {
+    "w": 14,
+    "h": 14
+   },
+   "duration": 100
+  },
+  "coin_spin_3": {
+   "frame": {
+    "x": 42,
+    "y": 0,
+    "w": 14,
+    "h": 14
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 14,
+    "h": 14
+   },
+   "sourceSize": {
+    "w": 14,
+    "h": 14
+   },
+   "duration": 100
+  },
+  "coin_spin_4": {
+   "frame": {
+    "x": 56,
+    "y": 0,
+    "w": 14,
+    "h": 14
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 14,
+    "h": 14
+   },
+   "sourceSize": {
+    "w": 14,
+    "h": 14
+   },
+   "duration": 100
+  },
+  "coin_spin_5": {
+   "frame": {
+    "x": 70,
+    "y": 0,
+    "w": 14,
+    "h": 14
+   },
+   "rotated": false,
+   "trimmed": false,
+   "spriteSourceSize": {
+    "x": 0,
+    "y": 0,
+    "w": 14,
+    "h": 14
+   },
+   "sourceSize": {
+    "w": 14,
+    "h": 14
+   },
+   "duration": 100
+  }
+ },
+ "meta": {
+  "app": "pxl",
+  "image": "coin_spin.png",
+  "format": "RGBA8888",
+  "size": {
+   "w": 84,
+   "h": 14
+  },
+  "scale": "1",
+  "frameTags": [
+   {
+    "name": "coin_spin",
+    "from": 0,
+    "to": 5,
+    "direction": "forward"
+   }
+  ]
+ }
+}
