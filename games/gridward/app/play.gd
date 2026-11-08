@@ -1,6 +1,8 @@
 extends Control
 
 const PAUSE_PATH := "res://games/gridward/app/pause_menu.tscn"
+const ICON_SHEET_PNG := "res://games/gridward/assets/pxl/icons.png"
+const ICON_SHEET_JSON := "res://games/gridward/assets/pxl/icons.json"
 const CLICK_DRAG_PX := 6.0
 
 const TOWER_ACTIONS: Array[StringName] = [
@@ -37,6 +39,8 @@ var _lmb_dragged: bool = false
 var _lmb_press_pos: Vector2 = Vector2.ZERO
 var _hovering: bool = false
 var _hover_local: Vector2 = Vector2.ZERO
+var _skip_sim_steps: int = 0
+var _icon_textures: Dictionary = {}
 
 @onready var _svc: SubViewportContainer = $BoardRoot/SubViewportContainer
 @onready var _viewport: SubViewport = $BoardRoot/SubViewportContainer/SubViewport
@@ -57,6 +61,7 @@ var _hover_local: Vector2 = Vector2.ZERO
 @onready var _build_bar: HBoxContainer = $BottomDock/Margin/Column/ActionRow/BuildBar
 @onready var _start: Button = $BottomDock/Margin/Column/ActionRow/StartWave
 @onready var _menu: Button = $BottomDock/Margin/Column/ActionRow/Menu
+@onready var _audio: GridwardAudio = $GridwardAudio
 
 
 func bind_sim(sim: GridwardSim, map: MapDef) -> void:
@@ -149,9 +154,17 @@ func _advance_sim() -> void:
 	if _sim == null:
 		return
 	var count := 2 if _speed_2x else 1
+	var stepped := false
 	for _i in count:
+		if _skip_sim_steps > 0:
+			_skip_sim_steps -= 1
+			continue
 		_sim.step()
-	_after_command()
+		stepped = true
+		_dispatch_events(_sim.drain_events())
+	if stepped:
+		_refresh_hud()
+		_refresh_ghost()
 
 
 func _sample_input() -> void:
@@ -298,11 +311,67 @@ func _on_targeting_selected(index: int) -> void:
 
 
 func _after_command() -> void:
+	var events: Array = []
 	if _sim != null:
-		_sim.drain_events()
-	_sync_board()
+		events = _sim.drain_events()
+	_dispatch_events(events)
 	_refresh_hud()
 	_refresh_ghost()
+
+
+func _dispatch_events(events: Array) -> void:
+	var flashes: Array[int] = []
+	var killed := {}
+	for item in events:
+		var event: Dictionary = item
+		if event.is_empty():
+			continue
+		var reaction := GridwardAudio.reaction(event)
+		if _audio != null:
+			_audio.play_cue(reaction["cue"], float(reaction["volume"]))
+		var trauma := float(reaction["trauma"])
+		if trauma > 0.0 and _board != null:
+			_board.add_trauma(trauma)
+		var stop := int(reaction["hit_stop"])
+		if stop > _skip_sim_steps:
+			_skip_sim_steps = stop
+		_collect_vfx(event, StringName(reaction["vfx"]), flashes, killed)
+	_sync_board()
+	if _board == null:
+		return
+	for id in flashes:
+		if not killed.has(id):
+			_board.flash_enemy(id)
+
+
+func _collect_vfx(event: Dictionary, vfx: StringName, flashes: Array[int], killed: Dictionary) -> void:
+	if _board == null or vfx == &"":
+		return
+	var entity_id := int(event.get("id", -1))
+	match vfx:
+		&"hit_flash":
+			flashes.append(entity_id)
+		&"death_pop":
+			killed[entity_id] = true
+			_board.pop_enemy(entity_id, StringName(event.get("enemy_id", &"")))
+		&"tracer":
+			_pulse_tracer(event)
+		&"impact":
+			var point: Vector2 = event.get("position", Vector2.ZERO)
+			_board.burst_impact(point, float(event.get("splash_radius", 0.0)))
+
+
+func _pulse_tracer(event: Dictionary) -> void:
+	if StringName(event.get("kind", &"")) == TowerDef.KIND_PROJECTILE:
+		return
+	var tower := _tower_entity(int(event.get("id", -1)))
+	if tower == null or _board == null:
+		return
+	var target := _board.enemy_anchor(int(event.get("target_id", -1)))
+	if not is_finite(target.x):
+		return
+	var origin := GridwardBoard3D.cell_to_world(tower.cell) + Vector3(0.0, 0.7, 0.0)
+	_board.pulse_shot(origin, target, tower.tower_id)
 
 
 func _sync_board() -> void:
@@ -362,6 +431,16 @@ func _tower_at(cell: Vector2i) -> TowerState:
 	return null
 
 
+func _tower_entity(entity_id: int) -> TowerState:
+	if _sim == null or entity_id < 0:
+		return null
+	for item in _sim.get_towers():
+		var tower := item as TowerState
+		if tower != null and tower.id == entity_id:
+			return tower
+	return null
+
+
 func _find_selected_tower() -> TowerState:
 	if _sim == null or _selected_entity < 0:
 		return null
@@ -401,6 +480,7 @@ func _default_type() -> StringName:
 
 
 func _build_tower_buttons() -> void:
+	_load_tower_icons()
 	var index := 0
 	for tower_id in GridwardCatalog.TOWER_IDS:
 		index += 1
@@ -415,9 +495,37 @@ func _build_tower_buttons() -> void:
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.pressed.connect(_on_build_pressed.bind(tower_id))
 		button.focus_mode = Control.FOCUS_ALL
+		button.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		button.icon_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		var icon: Texture2D = _icon_textures.get(tower_id)
+		if icon != null:
+			button.icon = icon
+			button.expand_icon = false
+			button.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 		_style_button(button, Color(0.18, 0.32, 0.28, 1), false)
 		_build_bar.add_child(button)
 		_build_buttons.append(button)
+
+
+func _load_tower_icons() -> void:
+	_icon_textures.clear()
+	if not ResourceLoader.exists(ICON_SHEET_PNG) or not FileAccess.file_exists(ICON_SHEET_JSON):
+		return
+	var tex := load(ICON_SHEET_PNG) as Texture2D
+	if tex == null:
+		return
+	var sheet := PxlSheet.parse(FileAccess.get_file_as_string(ICON_SHEET_JSON))
+	if not sheet.is_valid():
+		return
+	for tower_id in GridwardCatalog.TOWER_IDS:
+		var rect := sheet.frame_rect(tower_id)
+		if rect.size.x <= 0 or rect.size.y <= 0:
+			continue
+		var atlas := AtlasTexture.new()
+		atlas.atlas = tex
+		atlas.region = Rect2(rect)
+		atlas.filter_clip = true
+		_icon_textures[tower_id] = atlas
 
 
 func _fill_targeting() -> void:

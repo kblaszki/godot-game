@@ -45,10 +45,11 @@ sequenceDiagram
   Play->>Host: push pause
   Note over Host: play process stops
   Host->>Play: pop resume
-  Play->>Sim: step once or twice
-  Play->>Sim: place_tower or start_wave
-  Play->>Sim: drain_events
-  Play->>Board: sync_from_sim
+  loop step slots
+    Play->>Sim: step unless hit-stop
+    Play->>Sim: drain_events
+  end
+  Play->>Board: juice and sync
 ```
 
 ## Match phases
@@ -85,4 +86,4 @@ sequenceDiagram
   Play->>Sim: drain_events()
 ```
 
-At 2×, play calls `step()` a second time in that same frame before draining events.
+At 1×, play calls `step()` once per frame. At 2× it calls `step()` twice. A big kill sets `_skip_sim_steps`, and each following step slot is skipped until that count hits zero. Play drains events after every step that ran. Those events drive juice only. They do not call back into the sim.

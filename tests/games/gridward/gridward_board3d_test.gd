@@ -84,6 +84,21 @@ func test_camera_hooks_should_orbit_pan_and_fit() -> void:
 	assert_almost_eq(framed.z, fitted.z, 0.001)
 
 
+func test_trauma_should_offset_only_the_camera() -> void:
+	var board: GridwardBoard3D = load("res://games/gridward/app/board_3d.tscn").instantiate()
+	add_child_autofree(board)
+	await wait_frames(1)
+	board.fit(Vector2(1280, 720))
+	var fitted := board.get_camera().global_position
+	var pivot := board.get_node("BoardPivot3D") as Node3D
+	var pivot_at := pivot.position
+	board.add_trauma(1.0)
+	board._process(0.05)
+	assert_gt(fitted.distance_to(board.get_camera().global_position), 0.02)
+	assert_eq(pivot.position, pivot_at)
+	assert_gt(board.get_trauma(), 0.8)
+
+
 func _mesh_count(node: Node) -> int:
 	var count := 0
 	if node is MeshInstance3D:

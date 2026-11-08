@@ -20,15 +20,23 @@ const BLOCKED := Color(0.32, 0.34, 0.36, 1)
 const GHOST_OK := Color(0.3, 0.85, 0.4, 0.5)
 const GHOST_BAD := Color(0.9, 0.22, 0.2, 0.5)
 
+const TRAUMA_DECAY := 2.4
+const TRAUMA_OFFSET := 0.42
+
 var _camera: Camera3D
 var _pivot: Node3D
 var _cells_root: Node3D
 var _path_root: Node3D
 var _towers_root: Node3D
 var _enemies_root: Node3D
+var _projectiles_root: Node3D
+var _fx_root: Node3D
 var _ghost: MeshInstance3D
 var _tower_nodes: Dictionary = {}
 var _enemy_nodes: Dictionary = {}
+var _projectile_nodes: Dictionary = {}
+var _trauma: float = 0.0
+var _shake_time: float = 0.0
 var _focus: Vector3 = Vector3.ZERO
 var _board_center: Vector3 = Vector3.ZERO
 var _distance: float = 18.0
@@ -48,8 +56,26 @@ func _ready() -> void:
 	_ensure_rig()
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	_shake_time += delta
+	_trauma = maxf(_trauma - TRAUMA_DECAY * delta, 0.0)
 	_apply_camera()
+
+
+func add_trauma(amount: float) -> void:
+	_trauma = clampf(_trauma + amount, 0.0, 1.0)
+
+
+func get_trauma() -> float:
+	return _trauma
+
+
+## Last mirrored enemy origin, or INF when that id is not on the board yet.
+func enemy_anchor(id: int) -> Vector3:
+	var node := _enemy_nodes.get(id) as Node3D
+	if node == null:
+		return Vector3(INF, INF, INF)
+	return node.position
 
 
 func get_camera() -> Camera3D:
@@ -103,6 +129,7 @@ func sync_from_sim(sim: GridwardSim) -> void:
 		_apply_camera()
 	_sync_towers(sim.get_towers())
 	_sync_enemies(sim.get_enemies())
+	_sync_projectiles(sim.get_projectiles())
 
 
 ## Viewport pixels. Returns MISS_CELL when the ray misses the ground plane.
@@ -217,6 +244,12 @@ func _ensure_rig() -> void:
 	_enemies_root = Node3D.new()
 	_enemies_root.name = "Enemies"
 	_pivot.add_child(_enemies_root)
+	_projectiles_root = Node3D.new()
+	_projectiles_root.name = "Projectiles"
+	_pivot.add_child(_projectiles_root)
+	_fx_root = Node3D.new()
+	_fx_root.name = "Fx"
+	_pivot.add_child(_fx_root)
 
 	if _use_meshes():
 		_ghost = MeshInstance3D.new()
@@ -354,6 +387,35 @@ func _sync_enemies(enemies: Array) -> void:
 	_drop_missing(_enemy_nodes, live)
 
 
+func _sync_projectiles(shots: Array) -> void:
+	if not _use_meshes():
+		return
+	var live := {}
+	for item in shots:
+		var shot := item as ProjectileState
+		if shot == null:
+			continue
+		live[shot.id] = true
+		var node := _projectile_nodes.get(shot.id) as MeshInstance3D
+		if node == null:
+			node = MeshInstance3D.new()
+			node.name = "Shot%d" % shot.id
+			var sphere := SphereMesh.new()
+			sphere.radius = 0.12
+			sphere.height = 0.24
+			node.mesh = sphere
+			var mat := StandardMaterial3D.new()
+			mat.albedo_color = Color(0.95, 0.55, 0.2, 1)
+			mat.emission_enabled = true
+			mat.emission = Color(1.0, 0.72, 0.3, 1)
+			mat.emission_energy_multiplier = 0.45
+			node.material_override = mat
+			_projectiles_root.add_child(node)
+			_projectile_nodes[shot.id] = node
+		node.position = point_to_world(shot.position) + Vector3(0.0, 0.35, 0.0)
+	_drop_missing(_projectile_nodes, live)
+
+
 func _make_tower(tower: TowerState) -> MeshInstance3D:
 	var node := MeshInstance3D.new()
 	node.name = "Tower%d" % tower.id
@@ -452,9 +514,100 @@ func _apply_camera() -> void:
 		sin(pitch),
 		cos(yaw) * cos(pitch)
 	) * _distance
-	_camera.global_position = _focus + offset
-	if _camera.global_position.distance_squared_to(_focus) > 0.0001:
-		_camera.look_at(_focus, Vector3.UP)
+	var kick := _shake_offset()
+	var look := _focus + kick
+	_camera.global_position = _focus + offset + kick
+	if _camera.global_position.distance_squared_to(look) > 0.0001:
+		_camera.look_at(look, Vector3.UP)
+
+
+func _shake_offset() -> Vector3:
+	var shake := _trauma * _trauma
+	if shake <= 0.000001:
+		return Vector3.ZERO
+	return Vector3(
+		TRAUMA_OFFSET * shake * sin(_shake_time * 31.0),
+		TRAUMA_OFFSET * 0.35 * shake * sin(_shake_time * 27.0),
+		TRAUMA_OFFSET * shake * cos(_shake_time * 23.0)
+	)
+
+
+func flash_enemy(id: int) -> void:
+	if not _use_meshes() or _fx_root == null:
+		return
+	var node := _enemy_nodes.get(id) as MeshInstance3D
+	if node == null:
+		return
+	var flash := MeshInstance3D.new()
+	var cyl := CylinderMesh.new()
+	cyl.top_radius = 0.28
+	cyl.bottom_radius = 0.28
+	cyl.height = 0.5
+	flash.mesh = cyl
+	flash.material_override = _flash_mat(Color(1.0, 0.95, 0.75, 0.85))
+	flash.position = node.position
+	_fx_root.add_child(flash)
+	var tw := create_tween()
+	tw.tween_property(flash, "scale", Vector3(1.35, 1.15, 1.35), 0.08)
+	tw.tween_callback(flash.queue_free)
+
+
+func pop_enemy(id: int, enemy_id: StringName) -> void:
+	if not _use_meshes() or _fx_root == null:
+		return
+	var node := _enemy_nodes.get(id) as MeshInstance3D
+	if node == null:
+		return
+	var pop := MeshInstance3D.new()
+	var cyl := CylinderMesh.new()
+	cyl.top_radius = 0.2
+	cyl.bottom_radius = 0.2
+	cyl.height = 0.4
+	pop.mesh = cyl
+	pop.material_override = _flash_mat(_enemy_color(enemy_id))
+	pop.position = node.position
+	_fx_root.add_child(pop)
+	var tw := create_tween()
+	tw.tween_property(pop, "scale", Vector3(1.5, 1.7, 1.5), 0.08).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_property(pop, "scale", Vector3(0.05, 0.05, 0.05), 0.14).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tw.tween_callback(pop.queue_free)
+
+
+func pulse_shot(from: Vector3, to: Vector3, tower_id: StringName) -> void:
+	if not _use_meshes() or _fx_root == null:
+		return
+	var delta := to - from
+	if delta.length_squared() < 0.0001:
+		return
+	var beam := MeshInstance3D.new()
+	var box := BoxMesh.new()
+	box.size = Vector3(delta.length(), 0.06, 0.06)
+	beam.mesh = box
+	beam.material_override = _flash_mat(_tower_color(tower_id))
+	beam.position = (from + to) * 0.5
+	beam.rotation = Vector3(0.0, yaw_for_xz_delta(Vector2(delta.x, delta.z)), 0.0)
+	_fx_root.add_child(beam)
+	var tw := create_tween()
+	tw.tween_property(beam, "scale", Vector3(1.0, 0.2, 0.2), 0.1)
+	tw.tween_callback(beam.queue_free)
+
+
+func burst_impact(point: Vector2, radius: float) -> void:
+	if not _use_meshes() or _fx_root == null:
+		return
+	var ring := MeshInstance3D.new()
+	var cyl := CylinderMesh.new()
+	cyl.top_radius = 0.08
+	cyl.bottom_radius = 0.08
+	cyl.height = 0.06
+	ring.mesh = cyl
+	ring.material_override = _flash_mat(Color(0.95, 0.55, 0.22, 1))
+	ring.position = point_to_world(point) + Vector3(0.0, 0.22, 0.0)
+	_fx_root.add_child(ring)
+	var spread := maxf(radius, 0.35) * 2.2
+	var tw := create_tween()
+	tw.tween_property(ring, "scale", Vector3(spread, 1.0, spread), 0.16).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tw.tween_callback(ring.queue_free)
 
 
 func _tower_color(tower_id: StringName) -> Color:
@@ -489,6 +642,14 @@ func _enemy_color(enemy_id: StringName) -> Color:
 			return Color(0.55, 0.22, 0.58, 1)
 		_:
 			return Color(0.85, 0.85, 0.85, 1)
+
+
+func _flash_mat(color: Color) -> StandardMaterial3D:
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = color
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	return mat
 
 
 func _mat(color: Color) -> StandardMaterial3D:

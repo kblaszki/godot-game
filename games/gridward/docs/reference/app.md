@@ -13,17 +13,22 @@ related_code:
   - games/gridward/app/pause_menu.tscn
   - games/gridward/app/board_3d.gd
   - games/gridward/app/board_3d.tscn
+  - games/gridward/app/gridward_audio.gd
+  - art/gridward/icons.px.js
+  - games/gridward/assets/pxl/icons.json
   - lab/launcher.gd
   - tests/games/gridward/gridward_host_flow_test.gd
   - tests/games/gridward/gridward_play_test.gd
   - tests/games/gridward/gridward_board3d_test.gd
+  - tests/games/gridward/gridward_juice_test.gd
 related_docs:
   - ../index.md
   - ../explanation/flow.md
   - sim.md
   - ../../../../docs/reference/lab-shell.md
   - ../../../../docs/reference/engine-scene-stack.md
-keywords: [gridward, app, host, menu, play, pause, HUD, build bar, LayeredHost, GridwardBoard3D, camera, cell pick]
+  - ../../../../docs/how-to/make-pixel-art.md
+keywords: [gridward, app, host, menu, play, pause, HUD, build bar, LayeredHost, GridwardBoard3D, camera, cell pick, juice, audio, icons, trauma, hit-stop]
 last_reviewed: 2026-11-09
 ---
 
@@ -43,6 +48,7 @@ classDiagram
   class SceneStack
   class GridwardSim
   class GridwardBoard3D
+  class GridwardAudio
   class Camera3D
   Host --> SceneStack : owns
   Host --> Menu : boot replace
@@ -52,8 +58,9 @@ classDiagram
   Play --> Host : "push pause, pop via menu"
   PauseMenu --> Host : "pop or replace menu"
   Play --> GridwardSim : "step, commands"
-  Play --> GridwardBoard3D : sync_from_sim
-  GridwardBoard3D --> Camera3D : "orbit, pan, dolly, fit"
+  Play --> GridwardAudio : play_cue
+  Play --> GridwardBoard3D : "sync and juice"
+  GridwardBoard3D --> Camera3D : "orbit, pan, dolly, fit, trauma"
 ```
 
 ## Host
@@ -69,7 +76,7 @@ classDiagram
 
 ## Play
 
-Play embeds `GridwardBoard3D` in a `SubViewport`, owns a Meadow `GridwardSim`, and steps it. Each frame calls `step()` once, or twice when speed is 2×. When pause is the top layer, `LayeredHost` disables play's process, so `step()` does not run. Events are drained after commands and after those steps. The board only mirrors state.
+Play embeds `GridwardBoard3D` in a `SubViewport`, owns a Meadow `GridwardSim`, and steps it. Each frame calls `step()` once, or twice when speed is 2×, unless hit-stop is skipping steps. When pause is the top layer, `LayeredHost` disables play's process, so `step()` does not run. Events are drained after commands and after each step that ran. The board mirrors state and plays juice. It does not change rules.
 
 | Corner / dock | Shows |
 |---------------|--------|
@@ -78,7 +85,7 @@ Play embeds `GridwardBoard3D` in a `SubViewport`, owns a Meadow `GridwardSim`, a
 | Right `TowerPanel` | Selected tower: upgrade cost, sell, targeting |
 | Bottom `BottomDock` | Next or current wave, build bar 1–5, Start Wave / Early Call, Menu |
 
-The build bar lists `GridwardCatalog.TOWER_IDS` in order. A type the map has not unlocked is disabled. Meadow starts with bolt selected. LMB on an empty buildable cell calls `place_tower` for the selected type. LMB on a tower selects it and opens the panel. RMB sells the tower under the cursor, or the selected tower when the cursor is on empty ground. Upgrade uses `GridwardSim.upgrade_cost` with default `GridwardConfig` factors, the same defaults the sim constructs. Sell calls `sell_tower`. The targeting list calls `set_targeting`.
+The build bar lists `GridwardCatalog.TOWER_IDS` in order. Each button shows that tower's frame from `games/gridward/assets/pxl/icons.png`, parsed with `PxlSheet`, as an `AtlasTexture` with `TEXTURE_FILTER_NEAREST` and `expand_icon` off. The source is `art/gridward/icons.px.js` ([make pixel art](../../../../docs/how-to/make-pixel-art.md)). A type the map has not unlocked is disabled. Meadow starts with bolt selected. LMB on an empty buildable cell calls `place_tower` for the selected type. LMB on a tower selects it and opens the panel. RMB sells the tower under the cursor, or the selected tower when the cursor is on empty ground. Upgrade uses `GridwardSim.upgrade_cost` with default `GridwardConfig` factors, the same defaults the sim constructs. Sell calls `sell_tower`. The targeting list calls `set_targeting`.
 
 Start Wave calls `start_wave`. During the post-clear intermission the button reads Early Call and the bonus from `early_call_bonus`. The preview line lists the current wave's counts. Victory and defeat replace that line and disable the button.
 
@@ -110,7 +117,45 @@ One world unit is one cell. `cell_to_world` is the cell center on Y=0: cell `(x,
 
 `cell_at_screen` casts the camera ray onto Y=0. A miss returns `MISS_CELL` (`Vector2i(2147483647, 2147483647)`), the integer stand-in for INF. `set_ghost` shows a green or red column, and hides it for `MISS_CELL`.
 
-Cells, the path, towers, and enemies are boxes and cylinders parented to `BoardPivot3D`. The pivot stays put. Orbit, pan, dolly, and fit move `Camera3D` around the board center at about 40° pitch. `DisplayServer` headless (or the headless feature) skips every `MeshInstance3D`, including the ghost. Lights and the camera rig still exist.
+Cells, the path, towers, enemies, and in-flight shells are boxes, cylinders, and spheres parented to `BoardPivot3D`. Shells mirror `get_projectiles()`. The pivot stays put. Orbit, pan, dolly, and fit move `Camera3D` around the board center at about 40° pitch. Trauma adds a decaying offset to that camera pose only. `DisplayServer` headless (or the headless feature) skips every `MeshInstance3D`, including the ghost, shells, and juice meshes. Lights and the camera rig still exist.
+
+## Feedback
+
+`GridwardAudio.reaction` is a pure map from one event dictionary to a cue, volume, trauma, hit-stop count, and VFX id. Play applies it. The sim is not called back, and juice does not draw from the sim RNG.
+
+Headless play and GUT use `NullAudio` (or an injected port such as `AudioSpy`). A windowed session builds `GodotAudio` blips inside `GridwardAudio`. There is no music bus.
+
+Hit-stop sets `_skip_sim_steps` to 4. The host then withholds that many later `step()` calls. It does not change `Engine.time_scale` or the sim.
+
+| Event | VFX | Cue | Trauma | Hit-stop |
+|-------|-----|-----|--------|----------|
+| `enemy_hit` | white flash mesh | `hit` | | |
+| `enemy_killed` bounty under 50 | death pop (`TRANS_BACK`) | `kill` | | |
+| `enemy_killed` boss, or bounty ≥ 50 | death pop | `kill_big` | 0.34 | 4 steps |
+| `enemy_leaked` | | `leak` | 0.62 | |
+| `tower_fired` hitscan or beam | tracer from tower to enemy | `fire` | | |
+| `tower_fired` projectile | shell mesh from sim state | `fire` | | |
+| `projectile_impact` | shockwave scaled by splash | `impact` | | |
+| `tower_placed` | | `place` | | |
+| `tower_sold` | | `sell` | | |
+| `tower_upgraded` | | `upgrade` | | |
+| `wave_started` | | `wave` | | |
+| `wave_cleared` | | `clear` | | |
+| `victory` | | `victory` | | |
+| `defeat` | | `defeat` | 0.75 | |
+
+```mermaid
+sequenceDiagram
+  participant Play
+  participant Sim as GridwardSim
+  participant Audio as GridwardAudio
+  participant Board as GridwardBoard3D
+  Play->>Sim: step
+  Play->>Sim: drain_events
+  Play->>Audio: play_cue
+  Play->>Board: flash pop tracer trauma
+  Note over Play: big kill sets _skip_sim_steps
+```
 
 ```mermaid
 sequenceDiagram

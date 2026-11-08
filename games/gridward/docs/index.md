@@ -20,7 +20,7 @@ last_reviewed: 2026-11-09
 
 # Gridward
 
-Solo-campaign **fixed-path tower defense** in 3D. Status: **Meadow sim, 3D board, and play HUD**. The lab launcher opens a layered host, menu, and play scene. `sim/`
+Solo-campaign **fixed-path tower defense** in 3D. Status: **Meadow sim, 3D board, play HUD, combat juice, and tower icons**. The lab launcher opens a layered host, menu, and play scene. `sim/`
 holds `GridwardConfig`, entity defs, `GridwardCatalog.build_meadow()`, and `GridwardBot`.
 
 Presentation lives in `app/`. Follow
@@ -33,7 +33,7 @@ under [plans/](plans/).
 |-----|---------|
 | [sim.md](reference/sim.md) | Config, defs, Meadow catalog, match API, and bot |
 | [balance.md](reference/balance.md) | Bounty, bonuses, upgrade curve, Meadow lane-holds |
-| [app.md](reference/app.md) | Host, menu, play HUD, pause |
+| [app.md](reference/app.md) | Host, menu, play HUD, pause, juice, audio, icons |
 
 ## Explanation
 
