@@ -68,6 +68,7 @@ Inventory of the lab tree. Update this page when paths are added, removed, or re
 | breakout | `breakout_config.gd`, `breakout_sim.gd` | host + menu/play/pause + `assets/` | `games/breakout/docs/` | `breakout_sim_test.gd`, `breakout_host_flow_test.gd` |
 | districts | board/player/config/sim/bot/chance/gadgets/network stubs | host + setup/play/pause + baker + `board_3d` + `district_audio` + `assets/` | `games/districts/docs/` | `district_sim_test.gd`, `district_host_flow_test.gd`, `district_tile_baker_test.gd` |
 | minigolf | config/hole/course/ball/score/sim/bot | host + menu/setup/play/pause/results + `course_3d` + audio | `games/minigolf/docs/` | physics/sim/bot/host_flow |
+| gridward | *(planned)* | *(planned)* | `games/gridward/docs/` (spec + `plans/` 00–12; no sim/app code yet) | — |
 
 ## Engine modules
 
