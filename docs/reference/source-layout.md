@@ -68,7 +68,7 @@ Inventory of the lab tree. Update this page when paths are added, removed, or re
 | breakout | `breakout_config.gd`, `breakout_sim.gd` | host + menu/play/pause + `assets/` | `games/breakout/docs/` | `breakout_sim_test.gd`, `breakout_host_flow_test.gd` |
 | districts | board/player/config/sim/bot/chance/gadgets/network stubs | host + setup/play/pause + baker + `board_3d` + `district_audio` + `assets/` | `games/districts/docs/` | `district_sim_test.gd`, `district_host_flow_test.gd`, `district_tile_baker_test.gd` |
 | minigolf | config/hole/course/ball/score/sim/bot | host + menu/setup/play/pause/results + `course_3d` + audio | `games/minigolf/docs/` | physics/sim/bot/host_flow |
-| gridward | *(stub directory, no rules yet)* | host extends LayeredHost + menu/play stub | `games/gridward/docs/` (spec + `plans/` 00–12 + stub reference/explanation) | `gridward_host_flow_test.gd` |
+| gridward | `gridward_config.gd`, `map_def.gd`, `enemy_def.gd`, `tower_def.gd`, `wave_def.gd`, `gridward_catalog.gd` | host extends LayeredHost + menu/play stub | `games/gridward/docs/` (spec + `plans/` 00–12 + reference/explanation) | `gridward_catalog_test.gd`, `gridward_host_flow_test.gd` |
 
 ## Engine modules
 
@@ -120,4 +120,5 @@ Inventory of the lab tree. Update this page when paths are added, removed, or re
 | `tests/games/minigolf/minigolf_sim_test.gd` | hotseat / course complete |
 | `tests/games/minigolf/minigolf_bot_test.gd` | bot determinism |
 | `tests/games/minigolf/minigolf_host_flow_test.gd` | menu / play / pause |
+| `tests/games/gridward/gridward_catalog_test.gd` | Meadow path, buildable mask, wave ids, spec tables |
 | `tests/games/gridward/gridward_host_flow_test.gd` | menu to play; quit returns to lab |

@@ -13,16 +13,17 @@ related_docs:
   - plans/00-roadmap.md
   - ../../../docs/index.md
   - ../../../docs/explanation/architecture.md
-keywords: [gridward, tower-defense, td, index, scaffold]
+keywords: [gridward, tower-defense, td, index, MapDef, catalog]
 last_reviewed: 2026-11-08
 ---
 
 # Gridward
 
-Solo-campaign **fixed-path tower defense** in 3D. Status: **scaffold**. The lab
-launcher opens a layered host, menu, and play stub. `sim/` has no rules yet.
+Solo-campaign **fixed-path tower defense** in 3D. Status: **scaffold and data
+model**. The lab launcher opens a layered host, menu, and play stub. `sim/`
+holds `GridwardConfig`, entity defs, and `GridwardCatalog.build_meadow()`.
 
-Headless rules will live in `sim/`; presentation in `app/`. Follow
+Presentation lives in `app/`. Follow
 [architecture](../../../docs/explanation/architecture.md) and the plan series
 under [plans/](plans/).
 
@@ -30,7 +31,7 @@ under [plans/](plans/).
 
 | Doc | Purpose |
 |-----|---------|
-| [sim.md](reference/sim.md) | Placeholder `sim/` (no types yet) |
+| [sim.md](reference/sim.md) | Config, defs, and the Meadow catalog |
 | [app.md](reference/app.md) | Host, menu, play stub |
 
 ## Explanation
